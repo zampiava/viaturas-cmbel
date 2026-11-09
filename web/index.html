@@ -114,7 +114,7 @@ function telaLogin(aviso = '') {
     ${aviso ? `<p style="color:var(--verde)">${esc(aviso)}</p>` : ''}`, 'Entrar',
     async (d) => { await api('/api/login', d); iniciar(); },
     link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()')
-    + `<hr style="border:0;border-top:1px solid var(--borda);margin:16px 0 8px">` + link('🔐 Entrar com perfil administrativo', 'telaAdminLogin()'));
+    + `<hr style="border:0;border-top:1px solid var(--borda);margin:16px 0 8px">` + link('🔐 Entrar como administrador', 'telaAdminLogin()'));
 }
 function telaCriar() {
   formulario('Criar conta', 'Primeiro acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" required>
