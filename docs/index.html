@@ -107,7 +107,37 @@ const anima = (tipo = 'entra') => { app.classList.remove('entra', 'passo', 'pass
   clearTimeout(anima.t); anima.t = setTimeout(() => app.classList.remove(tipo), 900); };
 let eu, frota, rascunho;
 
+// Uso restrito à área do CMBEL: confere a localização do aparelho (raio de 10 km em volta do colégio).
+// ponytail: conferência feita no navegador — afasta o uso por outras OM, mas não é barreira de segurança. A barreira real é rodar na intranet.
+const CMBEL = { lat: -1.4165132, lon: -48.4436887, raioKm: 10 };
+function distKm(lat1, lon1, lat2, lon2) {
+  const rad = Math.PI / 180, a = Math.sin((lat2 - lat1) * rad / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin((lon2 - lon1) * rad / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+const localOk = () => { try { return sessionStorage.getItem('local') === 'ok'; } catch { return false; } };
+async function portaoLocal() {
+  // Em http (intranet) o navegador não fornece localização: ali a própria rede do colégio já restringe o acesso.
+  if (!window.isSecureContext || !navigator.geolocation || localOk()) return true;
+  telaAviso('Verificando sua localização', 'Este aplicativo é de uso do Colégio Militar de Belém. Permita o acesso à localização quando o navegador pedir.');
+  const r = await new Promise((ok) => navigator.geolocation.getCurrentPosition((p) => {
+    const km = distKm(p.coords.latitude, p.coords.longitude, CMBEL.lat, CMBEL.lon);
+    ok({ km, dentro: km - (p.coords.accuracy || 0) / 1000 <= CMBEL.raioKm }); // na dúvida (posição imprecisa), libera
+  }, (e) => ok({ negada: e.code === 1 }), { timeout: 15000, maximumAge: 600000 }));
+  if (r.dentro) { try { sessionStorage.setItem('local', 'ok'); } catch {} return true; }
+  if (r.km != null) telaAviso('Fora da área do CMBEL', `Você está a cerca de ${Math.round(r.km)} km do colégio. O aplicativo só funciona a até ${CMBEL.raioKm} km do Colégio Militar de Belém.`, true);
+  else if (r.negada) telaAviso('Permita a localização', 'O navegador está sem permissão de localização para este site. Libere a localização (ícone ao lado do endereço, ou nos ajustes do navegador) e tente de novo.', true);
+  else telaAviso('Localização indisponível', 'Não foi possível obter a localização. Verifique se a localização do aparelho está ligada e tente de novo.', true);
+  return false;
+}
+function telaAviso(titulo, texto, botoes) {
+  $('#quem').innerHTML = '';
+  app.innerHTML = `<div class="card entrada" style="text-align:center"><img class="selo" src="img/brasao.png" alt=""><h1>${titulo}</h1><p style="color:var(--fraco)">${esc(texto)}</p>
+    ${botoes ? `<button style="width:100%" onclick="iniciar()">Tentar de novo</button>` + link('Entrar como administrador', 'telaAdminLogin()') : ''}</div>`;
+  scrollTo(0, 0); anima();
+}
+
 async function iniciar() {
+  if (!(await portaoLocal())) return;
   try { eu = await api('/api/eu'); } catch { return telaLogin(); }
   $('#quem').innerHTML = `${esc(eu.posto)} ${esc(eu.nome)} <button class="sec mini" onclick="sair()">Sair</button>`;
   return eu.trocarSenha ? telaPerfil() : telaGaragem();
@@ -176,7 +206,7 @@ const aapi = async (rota, dados) => { await api('/api/admin/' + rota, { ...dados
 const vtDe = (id) => adados.viaturas.find((v) => v.id === id);
 function telaAdminLogin() {
   formulario('Perfil administrativo', 'Acesso restrito', `<label>Senha do perfil administrativo</label><input name="senha_admin" type="password" inputmode="numeric" autocomplete="off" required>`,
-    'Acessar', (d) => entrarAdmin(d), link('Voltar', 'telaLogin()'));
+    'Acessar', (d) => entrarAdmin(d), link('Voltar', 'iniciar()'));
   $('#f input').focus();
 }
 function telaAdmin(nova) {
