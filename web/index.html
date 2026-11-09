@@ -13,7 +13,7 @@ h2{margin:0 0 4px;font-size:13px;letter-spacing:3px;color:var(--ouro);text-trans
 input,textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--borda);background:#0b100d;color:var(--txt);font:inherit;margin:6px 0 12px}
 label{font-size:13px;color:var(--fraco)}button{cursor:pointer;font:inherit;border:0;border-radius:8px;padding:12px 18px;background:var(--verde);color:#08120b;font-weight:700}
 button.sec{background:transparent;color:var(--txt);border:1px solid var(--borda)}button:disabled{opacity:.4;cursor:default}
-.erro{color:var(--verm);min-height:20px}.garagem{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.erro{color:var(--verm);min-height:20px}.erro:not(:empty){background:#d9534f22;border:1px solid var(--verm);padding:10px 12px;border-radius:8px;font-weight:600}.garagem{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
 .vt{background:var(--painel);border:2px solid var(--borda);border-radius:14px;padding:14px;cursor:pointer;transition:.15s;text-align:left;color:var(--txt);font-weight:400;width:100%}
 .vt:hover,.vt.sel{border-color:var(--ouro);transform:translateY(-3px);box-shadow:0 8px 24px #0008}
 .vt.off .foto{filter:grayscale(1) brightness(.6)}.vt.off{opacity:.85}
@@ -39,6 +39,12 @@ dialog{background:var(--painel);color:var(--txt);border:1px solid var(--ouro);bo
 .dia:not(:disabled):hover,.hora:not(:disabled):hover{border-color:var(--ouro)}
 .dia.sel,.hora.sel{background:var(--ouro);color:#14110a;border-color:var(--ouro)}.dia.sel small{color:#14110a}
 .hora:disabled{text-decoration:line-through;opacity:.3}
+.abas{display:flex;gap:8px;margin:8px 0 16px;flex-wrap:wrap}.abas button{flex:1}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--borda);text-align:left;vertical-align:top}th{color:var(--ouro);font-size:12px;letter-spacing:1px}
+.quadro{overflow-x:auto}button.mini{padding:5px 9px;font-size:13px;margin:2px 0}.so-print{display:none}
+@media print{@page{size:landscape;margin:12mm}header,footer,.noprint,.faixa{display:none!important}body{background:#fff!important;color:#000}main{max-width:none;padding:0}
+  .so-print{display:flex;gap:14px;align-items:center;margin-bottom:14px;font-size:15px}.so-print img{height:70px}.assin{display:block;margin-top:40px}
+  table{font-size:12px}th,td{border:1px solid #000;color:#000}th{background:#eee}}
 </style>
 </head>
 <body>
@@ -77,14 +83,16 @@ function formulario(titulo, sub, corpo, botao, acao, rodape = '') {
   app.innerHTML = `<div class="card" style="max-width:400px;margin:30px auto"><img class="selo" src="/img/brasao.png" alt="">
   <h2>${sub}</h2><h1>${titulo}</h1><form id="f">${corpo}<p class="erro" id="e"></p><button style="width:100%">${botao}</button></form>${rodape}</div>`;
   $('#f').onsubmit = async (ev) => { ev.preventDefault(); const b = ev.target.querySelector('button:not([type])'); b.disabled = true;
-    try { await acao(Object.fromEntries(new FormData(ev.target))); } catch (e) { $('#e').textContent = e.message; } b.disabled = false; };
+    try { await acao(Object.fromEntries(new FormData(ev.target))); } catch (e) { $('#e').textContent = '⚠ ' + e.message; $('#e').scrollIntoView({ block: 'center', behavior: 'smooth' }); } b.disabled = false; };
 }
 function telaLogin(aviso = '') {
-  formulario('Identifique-se', 'Acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" autocomplete="username" required>
+  formulario('Identifique-se', 'Acesso', `<label>Identidade militar</label><input name="identidade" autocomplete="username" autocapitalize="characters" required>
     <label>Senha</label><input name="senha" type="password" autocomplete="current-password" required>
     ${aviso ? `<p style="color:var(--verde)">${esc(aviso)}</p>` : ''}`, 'Entrar',
-    async (d) => { await api('/api/login', d); iniciar(); },
-    link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()') + link('⚙ Área da Fiscalização', 'telaFiscal()'));
+    async (d) => {
+      if (d.identidade.trim().toUpperCase() === 'FISCAL') return entrarFiscal({ usuario_fiscal: 'FISCAL', senha_fiscal: d.senha });
+      await api('/api/login', d); iniciar(); },
+    link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()'));
 }
 function telaCriar() {
   formulario('Criar conta', 'Primeiro acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" required>
@@ -94,23 +102,56 @@ function telaCriar() {
 }
 function telaEsqueci() {
   formulario('Esqueci minha senha', 'Recuperar acesso', `<p><small style="color:var(--fraco)">Informe os mesmos dados do seu cadastro. Se conferirem, você cria uma senha nova.</small></p>
-    <label>Identidade militar</label><input name="identidade" inputmode="numeric" required>${campos(`<label>Nova senha (mín. 6 caracteres)</label><input name="senha" type="password" autocomplete="new-password" required>`)}`,
+    <label>Identidade militar</label><input name="identidade" inputmode="numeric" required>${campos(`<label>Crie sua senha — <b>mínimo 6 letras ou números</b> (ex.: cordeiro26)</label><input name="senha" type="password" autocomplete="new-password" required>`)}`,
     'Criar senha nova', async (d) => { await api('/api/recuperar-senha', d); telaLogin('Senha alterada. Entre com a senha nova.'); },
     link('◀ Voltar', 'telaLogin()'));
 }
 function telaPerfil() {
   formulario('Complete seu cadastro', 'Primeiro acesso', `<p><small style="color:var(--fraco)">Guarde bem estes dados: eles servem para recuperar a senha.</small></p>
-    ${campos(`<label>Nova senha (mín. 6 caracteres)</label><input name="senha" type="password" autocomplete="new-password" required>`)}`,
+    ${campos(`<label>Crie sua senha — <b>mínimo 6 letras ou números</b> (ex.: cordeiro26)</label><input name="senha" type="password" autocomplete="new-password" required>`)}`,
     'Salvar e continuar', async (d) => { await api('/api/perfil', d); iniciar(); }, link('Sair', 'sair()'));
 }
 
-// Área da Fiscalização: senha própria a cada entrada (como Furriel/Aprovisionamento no Rancho).
-let credFiscal = null;
+// Área da Fiscalização: entra pelo login com usuário FISCAL. Edita viaturas, missões e militares e imprime o quadro.
+let credFiscal = null, fdados = null, aba = 'missoes';
+const diaIso = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const horaIso = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+let periodo = { de: diaIso(Date.now()), ate: diaIso(Date.now() + 14 * 864e5) };
+async function entrarFiscal(cred) { fdados = await api('/api/fiscal/entrar', cred); credFiscal = cred; telaFiscal(); }
+const fapi = async (rota, dados) => { await api('/api/fiscal/' + rota, { ...dados, ...credFiscal }); fdados = await api('/api/fiscal/entrar', credFiscal); telaFiscal(); };
+const nomeV = (id) => fdados.viaturas.find((v) => v.id === id)?.nome || id;
 function telaFiscal() {
-  if (!credFiscal) return formulario('Área da Fiscalização', 'Acesso restrito', `<label>Usuário</label><input name="usuario_fiscal" autocapitalize="characters" autocomplete="username" required>
-    <label>Senha</label><input name="senha_fiscal" type="password" autocomplete="current-password" required>`,
-    'Entrar', async (d) => { frota = { ...(await api('/api/fiscal/entrar', d)), pedidos: [] }; credFiscal = d; telaFiscal(); }, link('◀ Voltar', 'iniciar()'));
-  $('#quem').innerHTML = '<b style="color:var(--ouro)">FISCALIZAÇÃO</b>';
+  $('#quem').innerHTML = `<b style="color:var(--ouro)">FISCALIZAÇÃO</b> <button class="sec" onclick="credFiscal=null;telaLogin()">Sair</button>`;
+  const abas = [['missoes', '📋 Missões'], ['viaturas', '🚐 Viaturas'], ['militares', '👤 Militares']]
+    .map(([k, t]) => `<button class="${aba === k ? '' : 'sec'}" onclick="aba='${k}';telaFiscal()">${t}</button>`).join('');
+  app.innerHTML = `<div class="noprint"><h2>Área da Fiscalização</h2><div class="abas">${abas}</div></div>${{ missoes: fMissoes, viaturas: fViaturas, militares: fMilitares }[aba]()}`;
+}
+function fMissoes() {
+  const de = +new Date(periodo.de + 'T00:00'), ate = +new Date(periodo.ate + 'T23:59');
+  const lista = fdados.pedidos.filter((p) => p.fim >= de && p.inicio <= ate);
+  return `<div class="noprint linha" style="align-items:end"><div><label>De</label><input type="date" value="${periodo.de}" onchange="periodo.de=this.value;telaFiscal()"></div>
+    <div><label>Até</label><input type="date" value="${periodo.ate}" onchange="periodo.ate=this.value;telaFiscal()"></div>
+    <div><button style="width:100%;margin-bottom:12px" onclick="print()">🖨 Imprimir quadro</button></div></div>
+    <div class="quadro"><div class="so-print"><img src="/img/brasao.png" alt=""><div><b>COLÉGIO MILITAR DE BELÉM</b><br>Quadro de Missões de Viaturas<br>
+      <small>${new Date(de).toLocaleDateString('pt-BR')} a ${new Date(ate).toLocaleDateString('pt-BR')}</small></div></div>
+    <table><thead><tr><th>Saída</th><th>Retorno</th><th>Viatura</th><th>Destino</th><th>Missão</th><th>Militar</th><th class="noprint"></th></tr></thead><tbody>
+    ${lista.map((p) => `<tr><td>${fmt(p.inicio)}</td><td>${fmt(p.fim)}</td><td>${esc(nomeV(p.viatura))}</td><td>${esc(p.destino)}</td><td>${esc(p.missao)}</td>
+      <td>${esc(p.posto)} ${esc(p.nome)}</td><td class="noprint" style="white-space:nowrap"><button class="sec mini" onclick="editarMissao(${p.id})">Editar</button>
+      <button class="sec mini" onclick="if(confirm('Excluir esta missão?'))fapi('pedido-excluir',{id:${p.id}})">Excluir</button></td></tr>`).join('')
+      || '<tr><td colspan="7" style="text-align:center;color:var(--fraco)">Nenhuma missão no período.</td></tr>'}</tbody></table>
+    <div class="so-print assin">Fiscal de Viaturas: ____________________________________</div></div>`;
+}
+function editarMissao(id) {
+  const p = fdados.pedidos.find((x) => x.id === id);
+  $('#dlg').innerHTML = `<h1>Editar missão</h1><form id="fm"><label>Viatura</label><select name="viatura">${fdados.viaturas.map((v) => `<option value="${v.id}" ${v.id === p.viatura ? 'selected' : ''}>${esc(v.nome)}</option>`).join('')}</select>
+    <div class="linha"><div><label>Saída</label><input type="datetime-local" name="inicio" value="${horaIso(p.inicio)}" required></div><div><label>Retorno</label><input type="datetime-local" name="fim" value="${horaIso(p.fim)}" required></div></div>
+    <label>Destino</label><input name="destino" value="${esc(p.destino)}" required><label>Missão</label><textarea name="missao" rows="3" required>${esc(p.missao)}</textarea>
+    <p class="erro" id="em"></p><div class="acoes"><button type="button" class="sec" onclick="dlg.close()">Cancelar</button><button>Salvar</button></div></form>`;
+  $('#fm').onsubmit = async (ev) => { ev.preventDefault(); const d = Object.fromEntries(new FormData(ev.target));
+    try { await fapi('pedido', { ...d, id, inicio: +new Date(d.inicio), fim: +new Date(d.fim) }); dlg.close(); } catch (e) { $('#em').textContent = '⚠ ' + e.message; } };
+  $('#dlg').showModal();
+}
+function fViaturas() {
   const tipos = (t) => Object.entries(TIPOS).map(([k, [n]]) => `<option value="${k}" ${k === t ? 'selected' : ''}>${n}</option>`).join('');
   const ficha = (v = { tipo: 'sedan', disponivel: 1 }) => `<form class="card fiscal" onsubmit="salvarVt(event,'${v.id || ''}')">
     <div class="todo">${v.id ? `<b>${esc(v.nome)}</b>` : '<h2>Adicionar viatura</h2>'}</div>
@@ -119,21 +160,28 @@ function telaFiscal() {
     <div><label>Placa / EB</label><input name="placa" value="${esc(v.placa || '')}"></div>
     <label class="chave"><input type="checkbox" name="disponivel" ${v.disponivel ? 'checked' : ''} onchange="this.form.motivo.required=!this.checked"> Disponível para pedidos</label>
     <div class="todo"><label>Motivo da indisponibilidade</label><input name="motivo" value="${esc(v.motivo || '')}" placeholder="Ex.: Em manutenção — troca de pneus" ${v.disponivel ? '' : 'required'}></div>
-    <div class="todo acoes">${v.id ? `<button type="button" class="sec" onclick="removerVt('${v.id}')">Remover</button>` : '<span></span>'}<button>${v.id ? 'Salvar' : '+ Adicionar'}</button></div></form>`;
-  app.innerHTML = `<h2>Área da Fiscalização</h2><h1>Situação da frota</h1>
-    <p style="color:var(--fraco)">Desmarque "Disponível" e informe o motivo para bloquear os pedidos daquela viatura.</p>
-    ${frota.viaturas.map(ficha).join('')}${ficha()}
-    <div class="acoes"><button class="sec" onclick="credFiscal=null;iniciar()">◀ Sair da Fiscalização</button></div>`;
+    <div class="todo acoes">${v.id ? `<button type="button" class="sec" onclick="if(confirm('Excluir esta viatura e todas as missões dela?'))fapi('remover',{id:'${v.id}'})">Excluir viatura</button>` : '<span></span>'}<button>${v.id ? 'Salvar' : '+ Adicionar'}</button></div></form>`;
+  return `<p style="color:var(--fraco)">Desmarque "Disponível" e informe o motivo para bloquear os pedidos daquela viatura.</p>${fdados.viaturas.map(ficha).join('')}${ficha()}`;
 }
 async function salvarVt(ev, id) {
-  ev.preventDefault(); const f = ev.target, d = Object.fromEntries(new FormData(f));
-  try { await api('/api/fiscal/viatura', { ...d, id, disponivel: f.disponivel.checked, ...credFiscal }); await recarregarFiscal(); } catch (e) { alert(e.message); }
+  ev.preventDefault(); const f = ev.target;
+  try { await fapi('viatura', { ...Object.fromEntries(new FormData(f)), id, disponivel: f.disponivel.checked }); } catch (e) { alert(e.message); }
 }
-async function removerVt(id) {
-  if (!confirm('Remover esta viatura e todos os pedidos dela?')) return;
-  await api('/api/fiscal/remover', { id, ...credFiscal }); await recarregarFiscal();
+function fMilitares() {
+  return `<p style="color:var(--fraco)">"Zerar senha" volta a senha para <b>123</b>; no próximo acesso o militar cria uma senha nova.</p>
+    <table><thead><tr><th>Identidade</th><th>Militar</th><th>Seção</th><th></th></tr></thead><tbody>
+    ${fdados.usuarios.map((u) => `<tr><td>${esc(u.identidade)}</td><td>${esc(u.posto || '')} ${esc(u.nome || '(sem cadastro)')}<br><small style="color:var(--fraco)">${esc(u.completo || '')}</small></td><td>${esc(u.secao || '')}</td>
+      <td style="white-space:nowrap"><button class="sec mini" onclick="editarMilitar('${u.identidade}')">Editar</button>
+      <button class="sec mini" onclick="if(confirm('Zerar a senha para 123?'))fapi('usuario-zerar',{identidade:'${u.identidade}'}).then(()=>alert('Senha zerada: 123'))">Zerar senha</button>
+      <button class="sec mini" onclick="if(confirm('Excluir este militar e as missões dele?'))fapi('usuario-excluir',{identidade:'${u.identidade}'})">Excluir</button></td></tr>`).join('')
+      || '<tr><td colspan="4" style="text-align:center;color:var(--fraco)">Nenhum militar cadastrado.</td></tr>'}</tbody></table>`;
 }
-async function recarregarFiscal() { frota = { ...(await api('/api/fiscal/entrar', credFiscal)), pedidos: [] }; telaFiscal();
+function editarMilitar(id) {
+  const u = fdados.usuarios.find((x) => x.identidade === id);
+  $('#dlg').innerHTML = `<h1>Editar militar</h1><form id="fm">${campos()}<div class="acoes"><button type="button" class="sec" onclick="dlg.close()">Cancelar</button><button>Salvar</button></div></form>`;
+  const f = $('#fm'); for (const k of ['completo', 'nome', 'posto', 'secao']) f.elements[k].value = u[k] || '';
+  f.onsubmit = async (ev) => { ev.preventDefault(); await fapi('usuario', { ...Object.fromEntries(new FormData(f)), identidade: id }); dlg.close(); };
+  $('#dlg').showModal();
 }
 
 function status(v) {
@@ -154,8 +202,7 @@ async function telaGaragem() {
   <div style="text-align:center;margin:22px 0"><button onclick="novaMissao()" style="font-size:17px;padding:16px 30px">▶ Nova missão</button></div>
   <div class="card"><h2>Minhas missões</h2>${frota.pedidos.filter((p) => p.identidade === eu.identidade && p.fim > frota.agora).map((p) =>
     `<div class="ped">${esc(nomeVt(p.viatura))} → <b>${esc(p.destino)}</b><br><small>${fmt(p.inicio)} até ${fmt(p.fim)} · ${esc(p.missao)}</small>
-    <br><button class="sec" style="padding:6px 10px;margin-top:6px" onclick="cancelar(${p.id})">Cancelar</button></div>`).join('') || '<small style="color:var(--fraco)">Nenhuma missão agendada.</small>'}</div>
-  <div style="text-align:center"><button class="sec" onclick="telaFiscal()">⚙ Área da Fiscalização</button></div>`;
+    <br><button class="sec" style="padding:6px 10px;margin-top:6px" onclick="cancelar(${p.id})">Cancelar</button></div>`).join('') || '<small style="color:var(--fraco)">Nenhuma missão agendada.</small>'}</div>`;
 }
 const nomeVt = (id) => frota.viaturas.find((v) => v.id === id)?.nome;
 

@@ -54,8 +54,21 @@
       u.senha = b.senha; u.trocar = false; return [200, {}];
     }
     if (r.startsWith('POST /api/fiscal/')) {
-      if (String(b.usuario_fiscal || '').trim().toUpperCase() !== 'FISCAL2026' || b.senha_fiscal !== '2026') return [401, { erro: 'Usuário ou senha da Fiscalização incorretos.' }];
-      if (r === 'POST /api/fiscal/entrar') return [200, { viaturas: db.viaturas }];
+      if (String(b.usuario_fiscal || '').trim().toUpperCase() !== 'FISCAL' || b.senha_fiscal !== 'FISCAL2026') return [401, { erro: 'Usuário ou senha da Fiscalização incorretos.' }];
+      if (r === 'POST /api/fiscal/entrar') return [200, { viaturas: db.viaturas, pedidos: [...db.pedidos].sort((a, c) => a.inicio - c.inicio).map(com),
+        usuarios: Object.entries(db.usuarios).map(([identidade, u]) => ({ identidade, ...u, senha: undefined })) }];
+      if (r === 'POST /api/fiscal/pedido') {
+        const p = db.pedidos.find((x) => x.id === +b.id); if (!p) return [404, { erro: 'Missão não encontrada.' }];
+        const n = { viatura: b.viatura, inicio: +b.inicio, fim: +b.fim, destino: String(b.destino || '').trim(), missao: String(b.missao || '').trim() };
+        if (!(n.fim > n.inicio)) return [409, { erro: 'A volta precisa ser depois da saída.' }];
+        const c = db.pedidos.find((x) => x.id !== p.id && x.viatura === n.viatura && n.inicio < x.fim && n.fim > x.inicio);
+        if (c) return [409, { erro: `Viatura já reservada nesse horário (${com(c).posto} ${com(c).nome}).` }];
+        Object.assign(p, n);
+      }
+      if (r === 'POST /api/fiscal/pedido-excluir') db.pedidos = db.pedidos.filter((x) => x.id !== +b.id);
+      if (r === 'POST /api/fiscal/usuario') Object.assign(db.usuarios[b.identidade], { completo: b.completo, nome: String(b.nome).toUpperCase(), posto: b.posto, secao: b.secao });
+      if (r === 'POST /api/fiscal/usuario-zerar') Object.assign(db.usuarios[b.identidade], { senha: '123', trocar: true });
+      if (r === 'POST /api/fiscal/usuario-excluir') { delete db.usuarios[b.identidade]; db.pedidos = db.pedidos.filter((x) => x.identidade !== b.identidade); if (db.sessao === b.identidade) db.sessao = null; }
       if (r === 'POST /api/fiscal/viatura') {
         const nome = String(b.nome || '').trim(), disp = b.disponivel ? 1 : 0, motivo = String(b.motivo || '').trim();
         if (!nome) return [400, { erro: 'Informe nome e tipo da viatura.' }];

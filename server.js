@@ -28,8 +28,8 @@ for (const [id, nome, tipo, disp] of [['onibus', 'Ônibus', 'onibus', 1], ['ambu
   ['cmt', 'Viatura do Cmt', 'sedan', 1], ['5ton', 'Caminhão 5 Ton', 'caminhao', 0], ['spin', 'Chevrolet Spin', 'van', 0], ['versa', 'Nissan Versa', 'sedan', 0]])
   db.prepare('INSERT OR IGNORE INTO viaturas (id, nome, tipo, placa, disponivel, motivo) VALUES (?,?,?,?,?,?)').run(id, nome, tipo, '', disp, disp ? null : AGUARDANDO);
 const TIPOS = ['onibus', 'ambulancia', 'doblo', 'caminhao', 'van', 'sedan'];
-const FISCAL_USUARIO = (process.env.FISCAL_USUARIO || 'FISCAL2026').toUpperCase();
-const FISCAL_SENHA = process.env.FISCAL_SENHA || '2026';
+const FISCAL_USUARIO = (process.env.FISCAL_USUARIO || 'FISCAL').toUpperCase();
+const FISCAL_SENHA = process.env.FISCAL_SENHA || 'FISCAL2026';
 let fiscalFalhas = 0, fiscalBloqueio = 0; // ponytail: bloqueio único em memória (zera ao reiniciar)
 
 for (const col of ['completo', 'secao']) try { db.exec(`ALTER TABLE usuarios ADD COLUMN ${col} TEXT`); } catch {}
@@ -116,7 +116,37 @@ async function api(req, res, rota) {
       return json(401, { erro: 'Usuário ou senha da Fiscalização incorretos.' });
     }
     fiscalFalhas = 0;
-    if (rota === 'POST /api/fiscal/entrar') return json(200, { viaturas: db.prepare('SELECT * FROM viaturas').all() });
+    if (rota === 'POST /api/fiscal/entrar') return json(200, {
+      viaturas: db.prepare('SELECT * FROM viaturas').all(),
+      pedidos: db.prepare('SELECT p.*, u.nome, u.posto FROM pedidos p JOIN usuarios u USING(identidade) ORDER BY inicio').all(),
+      usuarios: db.prepare('SELECT identidade, completo, nome, posto, secao, trocar_senha FROM usuarios ORDER BY nome').all(),
+    });
+    if (rota === 'POST /api/fiscal/pedido') {
+      const p = { id: Number(body.id), viatura: String(body.viatura), inicio: Number(body.inicio), fim: Number(body.fim),
+        destino: String(body.destino || '').trim().slice(0, 200), missao: String(body.missao || '').trim().slice(0, 500) };
+      if (!db.prepare('SELECT 1 FROM viaturas WHERE id=?').get(p.viatura)) return json(400, { erro: 'Viatura inválida.' });
+      if (!p.destino || !p.missao) return json(400, { erro: 'Informe destino e missão.' });
+      const outros = db.prepare('SELECT p.*, u.nome, u.posto FROM pedidos p JOIN usuarios u USING(identidade) WHERE viatura=? AND id<>?').all(p.viatura, p.id);
+      const erro = validarPedido(p, 0, outros); // agora=0: a Fiscalização não precisa respeitar as 48h
+      if (erro) return json(409, { erro });
+      db.prepare('UPDATE pedidos SET viatura=?, inicio=?, fim=?, destino=?, missao=? WHERE id=?').run(p.viatura, p.inicio, p.fim, p.destino, p.missao, p.id);
+      return json(200, {});
+    }
+    if (rota === 'POST /api/fiscal/pedido-excluir') { db.prepare('DELETE FROM pedidos WHERE id=?').run(Number(body.id)); return json(200, {}); }
+    if (rota === 'POST /api/fiscal/usuario') {
+      const d = Object.fromEntries(['completo', 'nome', 'posto', 'secao'].map((k) => [k, String(body[k] || '').trim()]));
+      db.prepare('UPDATE usuarios SET completo=?, nome=?, posto=?, secao=? WHERE identidade=?').run(d.completo, d.nome.toUpperCase(), d.posto, d.secao, String(body.identidade));
+      return json(200, {});
+    }
+    if (rota === 'POST /api/fiscal/usuario-zerar') {
+      db.prepare('UPDATE usuarios SET senha=?, trocar_senha=1, falhas=0, bloqueado_ate=0 WHERE identidade=?').run(hash(SENHA_INICIAL), String(body.identidade));
+      db.prepare('DELETE FROM sessoes WHERE identidade=?').run(String(body.identidade));
+      return json(200, {});
+    }
+    if (rota === 'POST /api/fiscal/usuario-excluir') {
+      for (const t of ['pedidos', 'sessoes', 'usuarios']) db.prepare(`DELETE FROM ${t} WHERE identidade=?`).run(String(body.identidade));
+      return json(200, {});
+    }
     if (rota === 'POST /api/fiscal/viatura') {
       const nome = String(body.nome || '').trim().slice(0, 60), tipo = String(body.tipo), disp = body.disponivel ? 1 : 0, motivo = String(body.motivo || '').trim().slice(0, 200);
       if (!nome || !TIPOS.includes(tipo)) return json(400, { erro: 'Informe nome e tipo da viatura.' });
