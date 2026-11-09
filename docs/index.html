@@ -41,13 +41,26 @@ dialog{background:var(--painel);color:var(--txt);border:1px solid var(--ouro);bo
 .hora:disabled{text-decoration:line-through;opacity:.3}
 .abas{display:flex;gap:8px;margin:8px 0 16px;flex-wrap:wrap}.abas button{flex:1}
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--borda);text-align:left;vertical-align:top}th{color:var(--ouro);font-size:12px;letter-spacing:1px}
-.quadro{overflow-x:auto}button.mini{padding:5px 9px;font-size:13px;margin:2px 0}.so-print{display:none}
+.quadro{overflow-x:auto}button.mini{padding:5px 9px;font-size:13px;margin:2px 0}.impresso{display:none}
+.dia-t{margin:22px 0 8px;font-size:15px;font-weight:400;color:var(--fraco)}.dia-t b{color:var(--txt)}
+.ag{display:grid;grid-template-columns:78px 120px 1fr auto;gap:14px;align-items:center;background:var(--painel);border:1px solid var(--borda);border-left:4px solid var(--ouro);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.ag.andando{border-left-color:var(--verm)}.ag.passou{opacity:.6;border-left-color:var(--borda)}
+.ag-hora{display:flex;flex-direction:column;text-align:center}.ag-hora b{font-size:24px;line-height:1.1;margin-bottom:6px}.ag-hora span{font-size:16px;font-weight:600}.ag-hora small{font-size:10px;letter-spacing:1px;color:var(--fraco)}
+.ag-foto{width:120px;height:82px;object-fit:cover;border-radius:8px}.ag-info{display:grid;gap:3px;min-width:0}.ag-vt{font-weight:700;font-size:16px;color:var(--ouro)}
+.ag-acoes{display:flex;flex-direction:column;gap:2px}
+.chip{font-size:10px;letter-spacing:1px;padding:2px 8px;border-radius:99px;border:1px solid var(--borda);color:var(--fraco);vertical-align:middle;white-space:nowrap}.chip.verm{color:var(--verm);border-color:var(--verm)}
+@media(max-width:640px){.ag{grid-template-columns:70px 1fr}.ag-foto{display:none}.ag-acoes{grid-column:1/-1;flex-direction:row}}
+.vt.nova{display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;min-height:220px}.mais{font-size:44px;color:var(--ouro);line-height:1}
+main.entra>*{animation:entra .28s ease both}dialog[open]{animation:entra .2s ease}@keyframes entra{from{opacity:0;transform:translateY(10px)}}
+button{transition:filter .15s,transform .1s,border-color .15s,box-shadow .15s}button:not(:disabled):hover{filter:brightness(1.12)}button:not(:disabled):active{transform:scale(.97)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ouro);outline-offset:1px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{@page{size:landscape;margin:12mm}header,footer,.noprint,.faixa{display:none!important}body{background:#fff!important;color:#000}main{max-width:none;padding:0}
-  .so-print{display:flex;gap:14px;align-items:center;margin-bottom:14px;font-size:15px}.so-print img{height:70px}.assin{display:block;margin-top:40px}
+  .impresso{display:block}.cab{display:flex;gap:14px;align-items:center;margin-bottom:14px;font-size:15px}.cab img{height:70px}.assin{margin-top:40px}
   table{font-size:12px}th,td{border:1px solid #000;color:#000}th{background:#eee}}
 </style>
 </head>
-<body><div class="faixa" style="background:#d4b24c;color:#14110a;text-align:center;padding:6px;font-size:13px;font-weight:700">DEMONSTRAÇÃO · os pedidos ficam salvos só neste aparelho · senha de primeiro acesso: 123 · Fiscalização: usuário FISCAL, senha FISCAL2026</div>
+<body><div class="faixa" style="background:#d4b24c;color:#14110a;text-align:center;padding:6px;font-size:13px;font-weight:700">DEMONSTRAÇÃO · os pedidos ficam salvos só neste aparelho · senha de primeiro acesso: 123</div>
 <header><div class="marca"><img src="img/brasao.png" alt="Brasão do CMBEL"><div><b>VIATURAS CMBEL</b><small>COLÉGIO MILITAR DE BELÉM</small></div></div><span id="quem"></span></header>
 <main id="app"></main>
 <dialog id="dlg"></dialog>
@@ -62,7 +75,9 @@ const api = async (url, body) => {
 const fmt = (ms) => new Date(ms).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const TIPOS = { onibus: ['Ônibus', 'onibus.jpg'], ambulancia: ['Ambulância', 'ambulancia.jpg'], doblo: ['Doblò / utilitário', 'doblo.jpg'],
   caminhao: ['Caminhão', '5ton.jpg'], van: ['Mini-van (Spin)', 'spin.jpg'], sedan: ['Sedã', 'versa.jpg'] };
-const ICONES = new Proxy({}, { get: (_, t) => `<img class="foto" src="img/${(TIPOS[t] || TIPOS.sedan)[1]}" alt="">` });
+const fotoSrc = (v) => esc(v?.foto || `img/${(TIPOS[v?.tipo] || TIPOS.sedan)[1]}`);
+const foto = (v) => `<img class="foto" src="${fotoSrc(v)}" alt="">`;
+const anima = () => { app.classList.remove('entra'); void app.offsetWidth; app.classList.add('entra'); };
 let eu, frota, rascunho;
 
 async function iniciar() {
@@ -82,7 +97,7 @@ function formulario(titulo, sub, corpo, botao, acao, rodape = '') {
   $('#quem').innerHTML = '';
   app.innerHTML = `<div class="card" style="max-width:400px;margin:30px auto"><img class="selo" src="img/brasao.png" alt="">
   <h2>${sub}</h2><h1>${titulo}</h1><form id="f" novalidate>${corpo}<p class="erro" id="e"></p><button style="width:100%">${botao}</button></form>${rodape}</div>`;
-  scrollTo(0, 0);
+  scrollTo(0, 0); anima();
   $('#f').oninput = (ev) => { $('#e').textContent = ''; ev.target.classList.remove('falta'); };
   $('#f').onsubmit = async (ev) => { ev.preventDefault();
     const faltam = [...ev.target.elements].filter((el) => el.required && !el.value.trim());
@@ -93,14 +108,13 @@ function formulario(titulo, sub, corpo, botao, acao, rodape = '') {
     try { await acao(Object.fromEntries(new FormData(ev.target))); } catch (e) { $('#e').textContent = '⚠ ' + e.message; $('#e').scrollIntoView({ block: 'center', behavior: 'smooth' }); } b.disabled = false; };
 }
 function telaLogin(aviso = '') {
-  formulario('Identifique-se', 'Acesso', `<label>Identidade militar</label><input name="identidade" autocomplete="username" autocapitalize="characters" required>
+  formulario('Identifique-se', 'Acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" autocomplete="username" required>
     <label>Senha</label><input name="senha" type="password" autocomplete="current-password" required>
     <p><small style="color:var(--fraco)">Primeiro acesso? Digite sua identidade e a senha <b>123</b>.</small></p>
     ${aviso ? `<p style="color:var(--verde)">${esc(aviso)}</p>` : ''}`, 'Entrar',
-    async (d) => {
-      if (d.identidade.trim().toUpperCase() === 'FISCAL') return entrarFiscal({ usuario_fiscal: 'FISCAL', senha_fiscal: d.senha });
-      await api('/api/login', d); iniciar(); },
-    link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()'));
+    async (d) => { await api('/api/login', d); iniciar(); },
+    link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()')
+    + `<hr style="border:0;border-top:1px solid var(--borda);margin:16px 0 8px">` + link('🔐 Entrar com perfil administrativo', 'telaAdminLogin()'));
 }
 function telaCriar() {
   formulario('Criar conta', 'Primeiro acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" required>
@@ -120,75 +134,132 @@ function telaPerfil() {
     'Salvar e continuar', async (d) => { await api('/api/perfil', d); iniciar(); }, link('Sair', 'sair()'));
 }
 
-// Área da Fiscalização: entra pelo login com usuário FISCAL. Edita viaturas, missões e militares e imprime o quadro.
-let credFiscal = null, fdados = null, aba = 'missoes';
-const diaIso = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+// Perfil administrativo: entra só com a senha. Agenda de missões e controle de viaturas e militares.
+let credAdmin = null, adados = null, aba = 'agenda';
+try { credAdmin = JSON.parse(sessionStorage.getItem('adm')); } catch {}
 const horaIso = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-let periodo = { de: diaIso(Date.now()), ate: diaIso(Date.now() + 14 * 864e5) };
-async function entrarFiscal(cred) { fdados = await api('/api/fiscal/entrar', cred); credFiscal = cred; telaFiscal(); }
-const fapi = async (rota, dados) => { await api('/api/fiscal/' + rota, { ...dados, ...credFiscal }); fdados = await api('/api/fiscal/entrar', credFiscal); telaFiscal(); };
-const nomeV = (id) => fdados.viaturas.find((v) => v.id === id)?.nome || id;
-function telaFiscal() {
-  $('#quem').innerHTML = `<b style="color:var(--ouro)">FISCALIZAÇÃO</b> <button class="sec" onclick="credFiscal=null;telaLogin()">Sair</button>`;
-  const abas = [['missoes', '📋 Missões'], ['viaturas', '🚐 Viaturas'], ['militares', '👤 Militares']]
-    .map(([k, t]) => `<button class="${aba === k ? '' : 'sec'}" onclick="aba='${k}';telaFiscal();scrollTo(0,0)">${t}</button>`).join('');
-  app.innerHTML = `<div class="noprint"><h2>Área da Fiscalização</h2><div class="abas">${abas}</div></div>${{ missoes: fMissoes, viaturas: fViaturas, militares: fMilitares }[aba]()}`;
+const hm = (ms) => new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+async function entrarAdmin(cred) {
+  adados = await api('/api/admin/entrar', cred); credAdmin = cred;
+  try { sessionStorage.setItem('adm', JSON.stringify(cred)); } catch {}
+  telaAdmin(true);
 }
-function fMissoes() {
-  const de = +new Date(periodo.de + 'T00:00'), ate = +new Date(periodo.ate + 'T23:59');
-  const lista = fdados.pedidos.filter((p) => p.fim >= de && p.inicio <= ate);
-  return `<div class="noprint linha" style="align-items:end"><div><label>De</label><input type="date" value="${periodo.de}" onchange="periodo.de=this.value;telaFiscal()"></div>
-    <div><label>Até</label><input type="date" value="${periodo.ate}" onchange="periodo.ate=this.value;telaFiscal()"></div>
-    <div><button style="width:100%;margin-bottom:12px" onclick="print()">🖨 Imprimir quadro</button></div></div>
-    <div class="quadro"><div class="so-print"><img src="img/brasao.png" alt=""><div><b>COLÉGIO MILITAR DE BELÉM</b><br>Quadro de Missões de Viaturas<br>
-      <small>${new Date(de).toLocaleDateString('pt-BR')} a ${new Date(ate).toLocaleDateString('pt-BR')}</small></div></div>
-    <table><thead><tr><th>Saída</th><th>Retorno</th><th>Viatura</th><th>Destino</th><th>Missão</th><th>Militar</th><th class="noprint"></th></tr></thead><tbody>
-    ${lista.map((p) => `<tr><td>${fmt(p.inicio)}</td><td>${fmt(p.fim)}</td><td>${esc(nomeV(p.viatura))}</td><td>${esc(p.destino)}</td><td>${esc(p.missao)}</td>
-      <td>${esc(p.posto)} ${esc(p.nome)}</td><td class="noprint" style="white-space:nowrap"><button class="sec mini" onclick="editarMissao(${p.id})">Editar</button>
-      <button class="sec mini" onclick="confirmar('Excluir esta missão?').then((s)=>s&&fapi('pedido-excluir',{id:${p.id}}))">Excluir</button></td></tr>`).join('')
-      || '<tr><td colspan="7" style="text-align:center;color:var(--fraco)">Nenhuma missão no período.</td></tr>'}</tbody></table>
-    <div class="so-print assin">Fiscal de Viaturas: ____________________________________</div></div>`;
+function sairAdmin() { credAdmin = null; try { sessionStorage.removeItem('adm'); } catch {} iniciar(); }
+const aapi = async (rota, dados) => { await api('/api/admin/' + rota, { ...dados, ...credAdmin }); adados = await api('/api/admin/entrar', credAdmin); telaAdmin(); };
+const vtDe = (id) => adados.viaturas.find((v) => v.id === id);
+function telaAdminLogin() {
+  formulario('Perfil administrativo', 'Acesso restrito', `<label>Senha do perfil administrativo</label><input name="senha_admin" type="password" inputmode="numeric" autocomplete="off" required>`,
+    'Acessar', (d) => entrarAdmin(d), link('◀ Voltar', 'telaLogin()'));
+  $('#f input').focus();
+}
+function telaAdmin(nova) {
+  $('#quem').innerHTML = `<b style="color:var(--ouro)">PERFIL ADMINISTRATIVO</b> <button class="sec" onclick="sairAdmin()">Sair</button>`;
+  const abas = [['agenda', '📅 Agenda'], ['viaturas', '🚐 Viaturas'], ['militares', '👤 Militares']]
+    .map(([k, t]) => `<button class="${aba === k ? '' : 'sec'}" onclick="aba='${k}';telaAdmin(true)">${t}</button>`).join('');
+  app.innerHTML = `<div class="abas noprint">${abas}</div>${{ agenda: aAgenda, viaturas: aViaturas, militares: aMilitares }[aba]()}`;
+  if (nova) { scrollTo(0, 0); anima(); }
+}
+
+// Agenda: um cartão por missão, agrupado por dia. Primeiro o que está mais perto; as já cumpridas ficam no fim.
+function aAgenda() {
+  const agora = Date.now(), hoje = meiaNoite(agora);
+  const fut = adados.pedidos.filter((p) => p.fim > agora), pas = adados.pedidos.filter((p) => p.fim <= agora).reverse();
+  const andando = fut.filter((p) => p.inicio <= agora).length;
+  const tituloDia = (ms) => { const d = Math.round((meiaNoite(ms) - hoje) / 864e5);
+    return `<h3 class="dia-t">${d === 0 ? '<b>Hoje</b> · ' : d === 1 ? '<b>Amanhã</b> · ' : d === -1 ? '<b>Ontem</b> · ' : ''}${new Date(ms).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</h3>`; };
+  const cartao = (p) => { const v = vtDe(p.viatura), agoraMesmo = p.inicio <= agora && p.fim > agora, passou = p.fim <= agora;
+    const outroDia = meiaNoite(p.fim) !== meiaNoite(p.inicio) ? `<small>${new Date(p.fim).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</small>` : '';
+    return `<div class="ag ${agoraMesmo ? 'andando' : ''} ${passou ? 'passou' : ''}">
+      <div class="ag-hora"><small>SAÍDA</small><b>${hm(p.inicio)}</b><small>RETORNO</small><span>${hm(p.fim)}</span>${outroDia}</div>
+      <img class="ag-foto" src="${fotoSrc(v)}" alt="">
+      <div class="ag-info"><div class="ag-vt">${esc(v?.nome || p.viatura)}${v?.placa ? ` <small>· ${esc(v.placa)}</small>` : ''}
+          ${agoraMesmo ? '<span class="chip verm">EM MISSÃO AGORA</span>' : passou ? '<span class="chip">CONCLUÍDA</span>' : ''}</div>
+        <div>📍 Destino: <b>${esc(p.destino)}</b></div><div>🎯 Missão: ${esc(p.missao)}</div>
+        <div>👤 Solicitante: <b>${esc(p.posto)} ${esc(p.nome)}</b>${p.secao ? ` · ${esc(p.secao)}` : ''}</div></div>
+      <div class="ag-acoes"><button class="sec mini" onclick="editarMissao(${p.id})">Editar</button>
+        <button class="sec mini" onclick="confirmar('Excluir esta missão?').then((s)=>s&&aapi('pedido-excluir',{id:${p.id}}))">Excluir</button></div></div>`; };
+  const porDia = (lista) => { let ult; return lista.map((p) => { const d = meiaNoite(p.inicio), t = d !== ult ? tituloDia(p.inicio) : ''; ult = d; return t + cartao(p); }).join(''); };
+  return `<div class="noprint"><div class="acoes" style="align-items:center;margin:0"><div><h1 style="margin:0">Agenda de missões</h1>
+      <small style="color:var(--fraco)">${fut.length} ${fut.length === 1 ? 'missão a cumprir' : 'missões a cumprir'}${andando ? ` · ${andando} em andamento agora` : ''}</small></div>
+      <button onclick="print()">🖨 Imprimir quadro</button></div>
+    ${porDia(fut) || '<div class="card" style="margin-top:16px;text-align:center;color:var(--fraco)">Nenhuma missão agendada.</div>'}
+    ${pas.length ? `<h2 style="margin-top:28px">Missões anteriores</h2>${porDia(pas)}` : ''}</div>
+    <div class="impresso"><div class="cab"><img src="img/brasao.png" alt=""><div><b>COLÉGIO MILITAR DE BELÉM</b><br>Quadro de Missões de Viaturas<br><small>Emitido em ${fmt(agora)}</small></div></div>
+    <table><thead><tr><th>Saída</th><th>Retorno</th><th>Viatura</th><th>Destino</th><th>Missão</th><th>Solicitante</th></tr></thead><tbody>
+    ${fut.map((p) => `<tr><td>${fmt(p.inicio)}</td><td>${fmt(p.fim)}</td><td>${esc(vtDe(p.viatura)?.nome || p.viatura)}</td><td>${esc(p.destino)}</td><td>${esc(p.missao)}</td><td>${esc(p.posto)} ${esc(p.nome)}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center">Nenhuma missão agendada.</td></tr>'}</tbody></table>
+    <div class="assin">Responsável: ____________________________________</div></div>`;
 }
 function editarMissao(id) {
-  const p = fdados.pedidos.find((x) => x.id === id);
-  $('#dlg').innerHTML = `<h1>Editar missão</h1><form id="fm"><label>Viatura</label><select name="viatura">${fdados.viaturas.map((v) => `<option value="${v.id}" ${v.id === p.viatura ? 'selected' : ''}>${esc(v.nome)}</option>`).join('')}</select>
+  const p = adados.pedidos.find((x) => x.id === id);
+  $('#dlg').innerHTML = `<h1>Editar missão</h1><form id="fm"><label>Viatura</label><select name="viatura">${adados.viaturas.map((v) => `<option value="${v.id}" ${v.id === p.viatura ? 'selected' : ''}>${esc(v.nome)}</option>`).join('')}</select>
     <div class="linha"><div><label>Saída</label><input type="datetime-local" name="inicio" value="${horaIso(p.inicio)}" required></div><div><label>Retorno</label><input type="datetime-local" name="fim" value="${horaIso(p.fim)}" required></div></div>
     <label>Destino</label><input name="destino" value="${esc(p.destino)}" required><label>Missão</label><textarea name="missao" rows="3" required>${esc(p.missao)}</textarea>
     <p class="erro" id="em"></p><div class="acoes"><button type="button" class="sec" onclick="dlg.close()">Cancelar</button><button>Salvar</button></div></form>`;
   $('#fm').onsubmit = async (ev) => { ev.preventDefault(); const d = Object.fromEntries(new FormData(ev.target));
-    try { await fapi('pedido', { ...d, id, inicio: +new Date(d.inicio), fim: +new Date(d.fim) }); dlg.close(); } catch (e) { $('#em').textContent = '⚠ ' + e.message; } };
+    try { await aapi('pedido', { ...d, id, inicio: +new Date(d.inicio), fim: +new Date(d.fim) }); dlg.close(); } catch (e) { $('#em').textContent = '⚠ ' + e.message; } };
   $('#dlg').showModal();
 }
-function fViaturas() {
-  const tipos = (t) => Object.entries(TIPOS).map(([k, [n]]) => `<option value="${k}" ${k === t ? 'selected' : ''}>${n}</option>`).join('');
-  const ficha = (v = { tipo: 'sedan', disponivel: 1 }) => `<form class="card fiscal" onsubmit="salvarVt(event,'${v.id || ''}')">
-    <div class="todo">${v.id ? `<b>${esc(v.nome)}</b>` : '<h2>Adicionar viatura</h2>'}</div>
-    <div><label>Nome</label><input name="nome" value="${esc(v.nome || '')}" placeholder="Ex.: Ambulância 2" required></div>
-    <div><label>Tipo (foto)</label><select name="tipo">${tipos(v.tipo)}</select></div>
-    <div><label>Placa / EB</label><input name="placa" value="${esc(v.placa || '')}"></div>
-    <label class="chave"><input type="checkbox" name="disponivel" ${v.disponivel ? 'checked' : ''} onchange="this.form.motivo.required=!this.checked"> Disponível para pedidos</label>
-    <div class="todo"><label>Motivo da indisponibilidade</label><input name="motivo" value="${esc(v.motivo || '')}" placeholder="Ex.: Em manutenção — troca de pneus" ${v.disponivel ? '' : 'required'}></div>
-    <div class="todo acoes">${v.id ? `<button type="button" class="sec" onclick="confirmar('Excluir esta viatura e todas as missões dela?').then((s)=>s&&fapi('remover',{id:'${v.id}'}))">Excluir viatura</button>` : '<span></span>'}<button>${v.id ? 'Salvar' : '+ Adicionar'}</button></div></form>`;
-  return `<p style="color:var(--fraco)">Desmarque "Disponível" e informe o motivo para bloquear os pedidos daquela viatura.</p>${fdados.viaturas.map(ficha).join('')}${ficha()}`;
+
+// Viaturas: clique no cartão para editar foto, nome, placa e situação.
+function aViaturas() {
+  const livres = adados.viaturas.filter((v) => v.disponivel).length;
+  return `<h1 style="margin:0">Viaturas</h1><p style="color:var(--fraco);margin-top:4px">${livres} de ${adados.viaturas.length} disponíveis para pedidos. Clique numa viatura para editar a foto, o nome e a situação.</p>
+    <div class="garagem">${adados.viaturas.map((v) => `<button class="vt ${v.disponivel ? '' : 'off'}" onclick="editarViatura('${v.id}')">${foto(v)}
+      <div class="nome">${esc(v.nome)}${v.placa ? ` <small style="color:var(--fraco);font-weight:400">· ${esc(v.placa)}</small>` : ''}</div>
+      <div class="st ${v.disponivel ? 'livre' : 'missao'}"><i></i>${v.disponivel ? 'Disponível' : 'Indisponível · ' + esc(v.motivo || '')}</div></button>`).join('')}
+      <button class="vt nova" onclick="editarViatura()"><div class="mais">＋</div><div class="nome">Nova viatura</div></button></div>`;
 }
-async function salvarVt(ev, id) {
-  ev.preventDefault(); const f = ev.target;
-  try { await fapi('viatura', { ...Object.fromEntries(new FormData(f)), id, disponivel: f.disponivel.checked }); } catch (e) { avisar('⚠ ' + e.message); }
+// Reduz a foto escolhida para caber no banco (máx. 800 px de largura, JPEG).
+function lerFoto(arquivo) {
+  return new Promise((ok, falha) => { const img = new Image();
+    img.onload = () => { const k = Math.min(1, 800 / img.width), c = document.createElement('canvas');
+      c.width = img.width * k; c.height = img.height * k; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src); ok(c.toDataURL('image/jpeg', 0.8)); };
+    img.onerror = () => falha(new Error('Não consegui abrir essa imagem. Use uma foto JPG ou PNG.'));
+    img.src = URL.createObjectURL(arquivo); });
 }
-function fMilitares() {
-  return `<p style="color:var(--fraco)">"Zerar senha" volta a senha para <b>123</b>; no próximo acesso o militar cria uma senha nova.</p>
-    <table><thead><tr><th>Identidade</th><th>Militar</th><th>Seção</th><th></th></tr></thead><tbody>
-    ${fdados.usuarios.map((u) => `<tr><td>${esc(u.identidade)}</td><td>${esc(u.posto || '')} ${esc(u.nome || '(sem cadastro)')}<br><small style="color:var(--fraco)">${esc(u.completo || '')}</small></td><td>${esc(u.secao || '')}</td>
+function editarViatura(id) {
+  const v = id ? vtDe(id) : { tipo: 'sedan', disponivel: 1 };
+  let novaFoto = v.foto || '';
+  $('#dlg').innerHTML = `<h1>${id ? 'Editar viatura' : 'Nova viatura'}</h1><form id="fm">
+    <img class="foto" id="pv" src="${fotoSrc(v)}" alt="" style="height:190px">
+    <div class="linha" style="margin-bottom:12px"><button type="button" class="sec" onclick="this.form.arq.click()">📷 Trocar foto</button><button type="button" class="sec" id="padrao">Usar foto padrão</button></div>
+    <input type="file" name="arq" accept="image/*" hidden>
+    <label>Nome da viatura</label><input name="nome" value="${esc(v.nome || '')}" placeholder="Ex.: Ambulância 2" required>
+    <div class="linha"><div><label>Categoria (foto padrão)</label><select name="tipo">${Object.entries(TIPOS).map(([k, [n]]) => `<option value="${k}" ${k === v.tipo ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <div><label>Placa / EB</label><input name="placa" value="${esc(v.placa || '')}"></div></div>
+    <label class="chave"><input type="checkbox" name="disponivel" ${v.disponivel ? 'checked' : ''}> <b>Disponível para pedidos</b></label>
+    <div id="mot"><label>Qual o problema? (todos veem este motivo)</label><input name="motivo" value="${esc(v.motivo || '')}" placeholder="Ex.: Em manutenção — troca de pneus"></div>
+    <p class="erro" id="em"></p>
+    <div class="acoes">${id ? '<button type="button" class="sec" id="exc" style="color:var(--verm)">Excluir viatura</button>' : '<span></span>'}
+      <span><button type="button" class="sec" onclick="dlg.close()">Cancelar</button> <button>Salvar</button></span></div></form>`;
+  const f = $('#fm'), pv = $('#pv'), padrao = () => `img/${TIPOS[f.tipo.value][1]}`;
+  const mot = () => { $('#mot').hidden = f.disponivel.checked; }; mot(); f.disponivel.onchange = mot;
+  f.arq.onchange = async () => { if (!f.arq.files[0]) return;
+    try { novaFoto = await lerFoto(f.arq.files[0]); pv.src = novaFoto; $('#em').textContent = ''; } catch (e) { $('#em').textContent = '⚠ ' + e.message; } };
+  $('#padrao').onclick = () => { novaFoto = ''; pv.src = padrao(); };
+  f.tipo.onchange = () => { if (!novaFoto) pv.src = padrao(); };
+  if (id) $('#exc').onclick = async () => { if (await confirmar('Excluir esta viatura e todas as missões dela?')) aapi('remover', { id }); };
+  f.onsubmit = async (ev) => { ev.preventDefault(); const d = Object.fromEntries(new FormData(f)); delete d.arq;
+    try { await aapi('viatura', { ...d, id: id || '', disponivel: f.disponivel.checked, foto: novaFoto }); dlg.close(); } catch (e) { $('#em').textContent = '⚠ ' + e.message; } };
+  $('#dlg').showModal();
+}
+
+function aMilitares() {
+  return `<h1 style="margin:0">Militares</h1><p style="color:var(--fraco);margin-top:4px">${adados.usuarios.length} cadastrados. "Zerar senha" volta a senha para <b>123</b>; no próximo acesso o militar cria uma senha nova.</p>
+    <div class="quadro"><table><thead><tr><th>Identidade</th><th>Militar</th><th>Seção</th><th></th></tr></thead><tbody>
+    ${adados.usuarios.map((u) => `<tr><td>${esc(u.identidade)}</td><td>${esc(u.posto || '')} ${esc(u.nome || '(sem cadastro)')}<br><small style="color:var(--fraco)">${esc(u.completo || '')}</small></td><td>${esc(u.secao || '')}</td>
       <td style="white-space:nowrap"><button class="sec mini" onclick="editarMilitar('${u.identidade}')">Editar</button>
-      <button class="sec mini" onclick="confirmar('Zerar a senha deste militar para 123?').then((s)=>s&&fapi('usuario-zerar',{identidade:'${u.identidade}'}).then(()=>avisar('Senha zerada. O militar entra com 123 e cria uma senha nova.')))">Zerar senha</button>
-      <button class="sec mini" onclick="confirmar('Excluir este militar e as missões dele?').then((s)=>s&&fapi('usuario-excluir',{identidade:'${u.identidade}'}))">Excluir</button></td></tr>`).join('')
-      || '<tr><td colspan="4" style="text-align:center;color:var(--fraco)">Nenhum militar cadastrado.</td></tr>'}</tbody></table>`;
+      <button class="sec mini" onclick="confirmar('Zerar a senha deste militar para 123?').then((s)=>s&&aapi('usuario-zerar',{identidade:'${u.identidade}'}).then(()=>avisar('Senha zerada. O militar entra com 123 e cria uma senha nova.')))">Zerar senha</button>
+      <button class="sec mini" style="color:var(--verm)" onclick="confirmar('Excluir este militar e as missões dele?').then((s)=>s&&aapi('usuario-excluir',{identidade:'${u.identidade}'}))">Excluir</button></td></tr>`).join('')
+      || '<tr><td colspan="4" style="text-align:center;color:var(--fraco)">Nenhum militar cadastrado.</td></tr>'}</tbody></table></div>`;
 }
 function editarMilitar(id) {
-  const u = fdados.usuarios.find((x) => x.identidade === id);
+  const u = adados.usuarios.find((x) => x.identidade === id);
   $('#dlg').innerHTML = `<h1>Editar militar</h1><form id="fm">${campos()}<div class="acoes"><button type="button" class="sec" onclick="dlg.close()">Cancelar</button><button>Salvar</button></div></form>`;
   const f = $('#fm'); for (const k of ['completo', 'nome', 'posto', 'secao']) f.elements[k].value = u[k] || '';
-  f.onsubmit = async (ev) => { ev.preventDefault(); await fapi('usuario', { ...Object.fromEntries(new FormData(f)), identidade: id }); dlg.close(); };
+  f.onsubmit = async (ev) => { ev.preventDefault(); await aapi('usuario', { ...Object.fromEntries(new FormData(f)), identidade: id }); dlg.close(); };
   $('#dlg').showModal();
 }
 
@@ -202,10 +273,11 @@ function status(v) {
 }
 
 async function telaGaragem() {
-  frota = await api('/api/frota'); scrollTo(0, 0);
-  app.innerHTML = `<h2>Garagem</h2><h1>Frota do Colégio Militar de Belém</h1>
+  frota = await api('/api/frota'); scrollTo(0, 0); anima();
+  app.innerHTML = `<h2>Garagem</h2><h1 style="margin-bottom:4px">Frota do Colégio Militar de Belém</h1>
+  <p style="color:var(--fraco);margin:0 0 14px">Clique numa viatura para ver a agenda dela ou fazer o pedido.</p>
   <div class="garagem">${[...frota.viaturas].sort((a, b) => b.disponivel - a.disponivel).map((v) => { const s = status(v);
-    return `<button class="vt ${v.disponivel ? '' : 'off'}" onclick="detalhe('${v.id}')">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div>
+    return `<button class="vt ${v.disponivel ? '' : 'off'}" onclick="detalhe('${v.id}')">${foto(v)}<div class="nome">${esc(v.nome)}</div>
     <div class="st ${s.cls}"><i></i>${esc(s.txt)}</div></button>`; }).join('')}</div>
   <div style="text-align:center;margin:22px 0"><button onclick="novaMissao()" style="font-size:17px;padding:16px 30px">▶ Nova missão</button></div>
   <div class="card"><h2>Minhas missões</h2>${frota.pedidos.filter((p) => p.identidade === eu.identidade && p.fim > frota.agora).map((p) =>
@@ -217,7 +289,7 @@ const nomeVt = (id) => frota.viaturas.find((v) => v.id === id)?.nome;
 function detalhe(id) {
   const v = frota.viaturas.find((x) => x.id === id), s = status(v);
   const lista = s.ps.filter((p) => p.fim > frota.agora);
-  $('#dlg').innerHTML = `${ICONES[v.tipo]}<h1 style="margin:6px 0">${esc(v.nome)}</h1><div class="st ${s.cls}"><i></i>${esc(s.txt)}</div>
+  $('#dlg').innerHTML = `${foto(v)}<h1 style="margin:6px 0">${esc(v.nome)}</h1><div class="st ${s.cls}"><i></i>${esc(s.txt)}</div>
   <h2 style="margin-top:16px">Agenda</h2>${lista.map((p) => `<div class="ped ${p.inicio <= frota.agora ? 'agora' : ''}">
   <b>${esc(p.posto)} ${esc(p.nome)}</b> → ${esc(p.destino)}<br><small>${fmt(p.inicio)} até ${fmt(p.fim)}<br>Missão: ${esc(p.missao)}</small></div>`).join('') || '<small style="color:var(--fraco)">Sem reservas.</small>'}
   <div class="acoes"><button class="sec" onclick="dlg.close()">Fechar</button>${v.disponivel ? `<button onclick="dlg.close();novaMissao('${id}')">Pedir esta viatura</button>` : ''}</div>`;
@@ -232,7 +304,7 @@ function confirmar(msg, sim = 'Sim', nao = 'Não') {
     $('#dlg').onclose = () => ok(false);
     $('#ds').onclick = () => { $('#dlg').onclose = null; $('#dlg').close(); ok(true); };
     if (nao) $('#dn').onclick = () => $('#dlg').close();
-    $('#dlg').showModal();
+    if (!$('#dlg').open) $('#dlg').showModal();
   });
 }
 const avisar = (msg) => confirmar(msg, 'OK', '');
@@ -243,11 +315,11 @@ function novaMissao(vt) { if (vt && !frota.viaturas.find((v) => v.id === vt)?.di
 function etapa() {
   const r = rascunho, n = r.etapa;
   const corpo = [
-    () => `<h1>Qual viatura?</h1><div class="garagem">${frota.viaturas.filter((v) => v.disponivel).map((v) => `<button class="vt ${r.viatura === v.id ? 'sel' : ''}" onclick="rascunho.viatura='${v.id}';etapa()">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div></button>`).join('')}</div>`,
+    () => `<h1>Qual viatura?</h1><div class="garagem">${frota.viaturas.filter((v) => v.disponivel).map((v) => `<button class="vt ${r.viatura === v.id ? 'sel' : ''}" onclick="rascunho.viatura='${v.id}';etapa()">${foto(v)}<div class="nome">${esc(v.nome)}</div></button>`).join('')}</div>`,
     () => telaQuando(r),
     () => `<h1>Para onde?</h1><label>Destino</label><input id="destino" placeholder="Ex.: 8ª RM, Aeroporto, Base Naval" value="${esc(r.destino || '')}">`,
     () => `<h1>Qual a missão?</h1><label>Descrição</label><textarea id="missao" rows="4" placeholder="Ex.: Transporte de material escolar">${esc(r.missao || '')}</textarea>`,
-    () => `<h1>Confirmar missão</h1>${ICONES[frota.viaturas.find((v) => v.id === r.viatura).tipo]}
+    () => `<h1>Confirmar missão</h1>${foto(frota.viaturas.find((v) => v.id === r.viatura))}
       <div class="ped"><b>${esc(nomeVt(r.viatura))}</b> → ${esc(r.destino)}<br><small>${fmt(r.ini)} até ${fmt(r.fim)}<br>Missão: ${esc(r.missao)}<br>Solicitante: ${esc(eu.posto)} ${esc(eu.nome)}</small></div>`,
   ][n]();
   app.innerHTML = `<div class="card"><h2>Etapa ${n + 1} de 5 · ${ETAPAS[n]}</h2><div class="barra">${ETAPAS.map((_, i) => `<span class="${i <= n ? 'on' : ''}"></span>`).join('')}</div>
@@ -255,7 +327,7 @@ function etapa() {
   <button onclick="avancar()" ${n === 0 && !r.viatura ? 'disabled' : ''}>${n === 4 ? '✔ Confirmar pedido' : 'Avançar ▶'}</button></div></div>`;
   app.querySelectorAll('input,textarea').forEach((el) => { el.oninput = () => { $('#e').textContent = ''; };
     el.onkeydown = (ev) => { if (ev.key === 'Enter' && (el.tagName === 'INPUT' || ev.ctrlKey)) { ev.preventDefault(); avancar(); } }; });
-  if (r.etapaVista !== n) { r.etapaVista = n; scrollTo(0, 0); app.querySelector('input,textarea')?.focus(); }
+  if (r.etapaVista !== n) { r.etapaVista = n; scrollTo(0, 0); anima(); app.querySelector('input,textarea')?.focus(); }
 }
 // Etapa "Quando": cartões de dia + botões de horário. Bloqueia antes de 48h e horários já reservados.
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], H = 36e5;
@@ -307,7 +379,8 @@ async function avancar() {
   try { await api('/api/pedido', { viatura: r.viatura, inicio: r.ini, fim: r.fim, destino: r.destino, missao: r.missao });
     await telaGaragem(); avisar('✔ Missão registrada!'); } catch (err) { e.textContent = err.message; }
 }
-const dlg = $('#dlg'); iniciar();
+const dlg = $('#dlg');
+if (credAdmin) entrarAdmin(credAdmin).catch(sairAdmin); else iniciar();
 </script>
 </body>
 </html>

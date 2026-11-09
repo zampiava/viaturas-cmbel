@@ -22,14 +22,16 @@ CREATE TABLE IF NOT EXISTS pedidos (id INTEGER PRIMARY KEY AUTOINCREMENT, viatur
 `);
 
 try { db.exec('ALTER TABLE viaturas ADD COLUMN disponivel INTEGER DEFAULT 1'); db.exec('ALTER TABLE viaturas ADD COLUMN motivo TEXT'); } catch {}
+try { db.exec('ALTER TABLE viaturas ADD COLUMN foto TEXT'); } catch {} // foto enviada pelo perfil administrativo (data URL)
 // Frota inicial (a Fiscalização ajusta pela Área do Fiscal).
 const AGUARDANDO = 'Aguardando informação da Fiscalização';
 for (const [id, nome, tipo, disp] of [['onibus', 'Ônibus', 'onibus', 1], ['ambulancia', 'Ambulância', 'ambulancia', 1], ['doblo', 'Fiat Doblò', 'doblo', 1],
   ['cmt', 'Viatura do Cmt', 'sedan', 1], ['5ton', 'Caminhão 5 Ton', 'caminhao', 0], ['spin', 'Chevrolet Spin', 'van', 0], ['versa', 'Nissan Versa', 'sedan', 0]])
   db.prepare('INSERT OR IGNORE INTO viaturas (id, nome, tipo, placa, disponivel, motivo) VALUES (?,?,?,?,?,?)').run(id, nome, tipo, '', disp, disp ? null : AGUARDANDO);
 const TIPOS = ['onibus', 'ambulancia', 'doblo', 'caminhao', 'van', 'sedan'];
-const FISCAL_USUARIO = (process.env.FISCAL_USUARIO || 'FISCAL').toUpperCase();
-const FISCAL_SENHA = process.env.FISCAL_SENHA || 'FISCAL2026';
+// Perfil administrativo: entra só com a senha. Fica guardado o hash, não a senha (troque com ADMIN_SENHA=...).
+const sha = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
+const ADMIN_HASH = process.env.ADMIN_SENHA ? sha(process.env.ADMIN_SENHA) : '22157665c4f19e6b0384ace8cf2c445bb725af8a0a9031dd1150d1a85ea9b147';
 let fiscalFalhas = 0, fiscalBloqueio = 0; // ponytail: bloqueio único em memória (zera ao reiniciar)
 
 for (const col of ['completo', 'secao']) try { db.exec(`ALTER TABLE usuarios ADD COLUMN ${col} TEXT`); } catch {}
@@ -66,7 +68,7 @@ const publico = (u) => u && { identidade: u.identidade, nome: u.nome, posto: u.p
 
 async function api(req, res, rota) {
   const body = req.method === 'POST' ? JSON.parse((await new Promise((r) => {
-    let d = ''; req.on('data', (c) => (d += c)); req.on('end', () => r(d));
+    let d = ''; req.on('data', (c) => { d += c; if (d.length > 15e5) { r('{}'); req.destroy(); } }); req.on('end', () => r(d)); // limite de 1,5 MB
   })) || '{}') : {};
   const json = (code, obj, extra = {}) => { res.writeHead(code, { 'Content-Type': 'application/json', ...extra }); res.end(JSON.stringify(obj)); };
 
@@ -114,19 +116,19 @@ async function api(req, res, rota) {
     return json(200, publico(u), { 'Set-Cookie': `vt=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000` });
   }
 
-  if (rota.startsWith('POST /api/fiscal/')) {
+  if (rota.startsWith('POST /api/admin/')) {
     if (fiscalBloqueio > Date.now()) return json(429, { erro: 'Muitas tentativas erradas. Tente de novo em 15 minutos.' });
-    if (String(body.usuario_fiscal || '').trim().toUpperCase() !== FISCAL_USUARIO || String(body.senha_fiscal || '') !== FISCAL_SENHA) {
+    if (sha(body.senha_admin || '') !== ADMIN_HASH) {
       if (++fiscalFalhas >= 5) { fiscalFalhas = 0; fiscalBloqueio = Date.now() + 15 * 60000; }
-      return json(401, { erro: 'Usuário ou senha da Fiscalização incorretos.' });
+      return json(401, { erro: 'Senha do perfil administrativo incorreta.' });
     }
     fiscalFalhas = 0;
-    if (rota === 'POST /api/fiscal/entrar') return json(200, {
+    if (rota === 'POST /api/admin/entrar') return json(200, {
       viaturas: db.prepare('SELECT * FROM viaturas').all(),
-      pedidos: db.prepare('SELECT p.*, u.nome, u.posto FROM pedidos p JOIN usuarios u USING(identidade) ORDER BY inicio').all(),
+      pedidos: db.prepare('SELECT p.*, u.nome, u.posto, u.secao FROM pedidos p JOIN usuarios u USING(identidade) ORDER BY inicio').all(),
       usuarios: db.prepare('SELECT identidade, completo, nome, posto, secao, trocar_senha FROM usuarios ORDER BY nome').all(),
     });
-    if (rota === 'POST /api/fiscal/pedido') {
+    if (rota === 'POST /api/admin/pedido') {
       const p = { id: Number(body.id), viatura: String(body.viatura), inicio: Number(body.inicio), fim: Number(body.fim),
         destino: String(body.destino || '').trim().slice(0, 200), missao: String(body.missao || '').trim().slice(0, 500) };
       if (!db.prepare('SELECT 1 FROM viaturas WHERE id=?').get(p.viatura)) return json(400, { erro: 'Viatura inválida.' });
@@ -137,32 +139,33 @@ async function api(req, res, rota) {
       db.prepare('UPDATE pedidos SET viatura=?, inicio=?, fim=?, destino=?, missao=? WHERE id=?').run(p.viatura, p.inicio, p.fim, p.destino, p.missao, p.id);
       return json(200, {});
     }
-    if (rota === 'POST /api/fiscal/pedido-excluir') { db.prepare('DELETE FROM pedidos WHERE id=?').run(Number(body.id)); return json(200, {}); }
-    if (rota === 'POST /api/fiscal/usuario') {
+    if (rota === 'POST /api/admin/pedido-excluir') { db.prepare('DELETE FROM pedidos WHERE id=?').run(Number(body.id)); return json(200, {}); }
+    if (rota === 'POST /api/admin/usuario') {
       const d = Object.fromEntries(['completo', 'nome', 'posto', 'secao'].map((k) => [k, String(body[k] || '').trim()]));
       db.prepare('UPDATE usuarios SET completo=?, nome=?, posto=?, secao=? WHERE identidade=?').run(d.completo, d.nome.toUpperCase(), d.posto, d.secao, String(body.identidade));
       return json(200, {});
     }
-    if (rota === 'POST /api/fiscal/usuario-zerar') {
+    if (rota === 'POST /api/admin/usuario-zerar') {
       db.prepare('UPDATE usuarios SET senha=?, trocar_senha=1, falhas=0, bloqueado_ate=0 WHERE identidade=?').run(hash(SENHA_INICIAL), String(body.identidade));
       db.prepare('DELETE FROM sessoes WHERE identidade=?').run(String(body.identidade));
       return json(200, {});
     }
-    if (rota === 'POST /api/fiscal/usuario-excluir') {
+    if (rota === 'POST /api/admin/usuario-excluir') {
       for (const t of ['pedidos', 'sessoes', 'usuarios']) db.prepare(`DELETE FROM ${t} WHERE identidade=?`).run(String(body.identidade));
       return json(200, {});
     }
-    if (rota === 'POST /api/fiscal/viatura') {
+    if (rota === 'POST /api/admin/viatura') {
       const nome = String(body.nome || '').trim().slice(0, 60), tipo = String(body.tipo), disp = body.disponivel ? 1 : 0, motivo = String(body.motivo || '').trim().slice(0, 200);
       if (!nome || !TIPOS.includes(tipo)) return json(400, { erro: 'Informe nome e tipo da viatura.' });
       if (!disp && !motivo) return json(400, { erro: 'Informe o motivo da indisponibilidade.' });
       const id = body.id || `vt${Date.now().toString(36)}`;
-      db.prepare(`INSERT INTO viaturas (id, nome, tipo, placa, disponivel, motivo) VALUES (?,?,?,?,?,?)
-        ON CONFLICT(id) DO UPDATE SET nome=excluded.nome, tipo=excluded.tipo, placa=excluded.placa, disponivel=excluded.disponivel, motivo=excluded.motivo`)
-        .run(id, nome, tipo, String(body.placa || '').trim().slice(0, 10), disp, disp ? null : motivo);
+      const foto = typeof body.foto === 'string' && body.foto.length < 1e6 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(body.foto) ? body.foto : null;
+      db.prepare(`INSERT INTO viaturas (id, nome, tipo, placa, disponivel, motivo, foto) VALUES (?,?,?,?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET nome=excluded.nome, tipo=excluded.tipo, placa=excluded.placa, disponivel=excluded.disponivel, motivo=excluded.motivo, foto=excluded.foto`)
+        .run(id, nome, tipo, String(body.placa || '').trim().slice(0, 10), disp, disp ? null : motivo, foto);
       return json(200, {});
     }
-    if (rota === 'POST /api/fiscal/remover') {
+    if (rota === 'POST /api/admin/remover') {
       db.prepare('DELETE FROM pedidos WHERE viatura=?').run(String(body.id));
       db.prepare('DELETE FROM viaturas WHERE id=?').run(String(body.id));
       return json(200, {});

@@ -30,7 +30,7 @@
   const fraca = (s) => (s.length < 6 ? 'A nova senha precisa ter pelo menos 6 caracteres.'
     : s === '123' || /^(\d)\1+$/.test(s) || '1234567890'.includes(s) ? 'Escolha uma senha menos óbvia (evite sequências ou números repetidos).' : null);
   const pub = (id) => { const u = db.usuarios[id]; return { identidade: id, nome: u.nome, posto: u.posto, trocarSenha: !!u.trocar }; };
-  const com = (p) => ({ ...p, nome: db.usuarios[p.identidade]?.nome, posto: db.usuarios[p.identidade]?.posto });
+  const com = (p) => ({ ...p, nome: db.usuarios[p.identidade]?.nome, posto: db.usuarios[p.identidade]?.posto, secao: db.usuarios[p.identidade]?.secao });
 
   function rota(r, b) {
     if (r === 'POST /api/criar-conta') {
@@ -56,11 +56,11 @@
       const f = fraca(String(b.senha || '')); if (f) return [400, { erro: f }];
       u.senha = b.senha; u.trocar = false; return [200, {}];
     }
-    if (r.startsWith('POST /api/fiscal/')) {
-      if (String(b.usuario_fiscal || '').trim().toUpperCase() !== 'FISCAL' || b.senha_fiscal !== 'FISCAL2026') return [401, { erro: 'Usuário ou senha da Fiscalização incorretos.' }];
-      if (r === 'POST /api/fiscal/entrar') return [200, { viaturas: db.viaturas, pedidos: [...db.pedidos].sort((a, c) => a.inicio - c.inicio).map(com),
+    if (r.startsWith('POST /api/admin/')) {
+      if (b._adm !== '22157665c4f19e6b0384ace8cf2c445bb725af8a0a9031dd1150d1a85ea9b147') return [401, { erro: 'Senha do perfil administrativo incorreta.' }];
+      if (r === 'POST /api/admin/entrar') return [200, { viaturas: db.viaturas, pedidos: [...db.pedidos].sort((a, c) => a.inicio - c.inicio).map(com),
         usuarios: Object.entries(db.usuarios).map(([identidade, u]) => ({ identidade, ...u, senha: undefined })) }];
-      if (r === 'POST /api/fiscal/pedido') {
+      if (r === 'POST /api/admin/pedido') {
         const p = db.pedidos.find((x) => x.id === +b.id); if (!p) return [404, { erro: 'Missão não encontrada.' }];
         const n = { viatura: b.viatura, inicio: +b.inicio, fim: +b.fim, destino: String(b.destino || '').trim(), missao: String(b.missao || '').trim() };
         if (!(n.fim > n.inicio)) return [409, { erro: 'A volta precisa ser depois da saída.' }];
@@ -68,18 +68,18 @@
         if (c) return [409, { erro: `Viatura já reservada nesse horário (${com(c).posto} ${com(c).nome}).` }];
         Object.assign(p, n);
       }
-      if (r === 'POST /api/fiscal/pedido-excluir') db.pedidos = db.pedidos.filter((x) => x.id !== +b.id);
-      if (r === 'POST /api/fiscal/usuario') Object.assign(db.usuarios[b.identidade], { completo: b.completo, nome: String(b.nome).toUpperCase(), posto: b.posto, secao: b.secao });
-      if (r === 'POST /api/fiscal/usuario-zerar') Object.assign(db.usuarios[b.identidade], { senha: '123', trocar: true });
-      if (r === 'POST /api/fiscal/usuario-excluir') { delete db.usuarios[b.identidade]; db.pedidos = db.pedidos.filter((x) => x.identidade !== b.identidade); if (db.sessao === b.identidade) db.sessao = null; }
-      if (r === 'POST /api/fiscal/viatura') {
+      if (r === 'POST /api/admin/pedido-excluir') db.pedidos = db.pedidos.filter((x) => x.id !== +b.id);
+      if (r === 'POST /api/admin/usuario') Object.assign(db.usuarios[b.identidade], { completo: b.completo, nome: String(b.nome).toUpperCase(), posto: b.posto, secao: b.secao });
+      if (r === 'POST /api/admin/usuario-zerar') Object.assign(db.usuarios[b.identidade], { senha: '123', trocar: true });
+      if (r === 'POST /api/admin/usuario-excluir') { delete db.usuarios[b.identidade]; db.pedidos = db.pedidos.filter((x) => x.identidade !== b.identidade); if (db.sessao === b.identidade) db.sessao = null; }
+      if (r === 'POST /api/admin/viatura') {
         const nome = String(b.nome || '').trim(), disp = b.disponivel ? 1 : 0, motivo = String(b.motivo || '').trim();
         if (!nome) return [400, { erro: 'Informe nome e tipo da viatura.' }];
         if (!disp && !motivo) return [400, { erro: 'Informe o motivo da indisponibilidade.' }];
-        const v = { id: b.id || `vt${Date.now().toString(36)}`, nome, tipo: b.tipo, placa: String(b.placa || '').trim(), disponivel: disp, motivo: disp ? null : motivo };
+        const v = { id: b.id || `vt${Date.now().toString(36)}`, nome, tipo: b.tipo, placa: String(b.placa || '').trim(), disponivel: disp, motivo: disp ? null : motivo, foto: b.foto || null };
         const i = db.viaturas.findIndex((x) => x.id === v.id); i >= 0 ? (db.viaturas[i] = v) : db.viaturas.push(v);
       }
-      if (r === 'POST /api/fiscal/remover') { db.viaturas = db.viaturas.filter((v) => v.id !== b.id); db.pedidos = db.pedidos.filter((p) => p.viatura !== b.id); }
+      if (r === 'POST /api/admin/remover') { db.viaturas = db.viaturas.filter((v) => v.id !== b.id); db.pedidos = db.pedidos.filter((p) => p.viatura !== b.id); }
       return [200, {}];
     }
     const id = db.sessao;
@@ -112,7 +112,9 @@
   }
 
   window.fetch = async (url, opt = {}) => {
-    const [status, corpo] = rota(`${opt.method || 'GET'} ${url}`, opt.body ? JSON.parse(opt.body) : {});
+    const b = opt.body ? JSON.parse(opt.body) : {};
+    if (b.senha_admin != null) b._adm = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(b.senha_admin)))].map((x) => x.toString(16).padStart(2, '0')).join('');
+    const [status, corpo] = rota(`${opt.method || 'GET'} ${url}`, b);
     salvar();
     return new Response(JSON.stringify(corpo), { status, headers: { 'Content-Type': 'application/json' } });
   };
