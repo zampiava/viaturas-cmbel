@@ -4,10 +4,10 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Viaturas CMBEL</title>
 <style>
-:root{color-scheme:light dark;--bg:#f5f5f7;--painel:#fff;--campo:#ececf0;--borda:#e0e0e5;--txt:#1d1d1f;--fraco:#6e6e73;--ouro:#0071e3;--verde:#248a3d;--verm:#d70015;--laranja:#c25e00;--sombra:0 1px 2px #0000000d,0 6px 20px #0000000d}
-@media(prefers-color-scheme:dark){:root{--bg:#000;--painel:#1c1c1e;--campo:#2c2c2e;--borda:#2c2c2e;--txt:#f5f5f7;--fraco:#98989d;--ouro:#0a84ff;--verde:#30d158;--verm:#ff453a;--laranja:#ff9f0a;--sombra:0 0 0 #0000}}
+:root{color-scheme:light dark;--bg:#f5f5f7;--painel:#fff;--campo:#ececf0;--borda:#e0e0e5;--txt:#1d1d1f;--fraco:#6e6e73;--ouro:#0071e3;--verde:#248a3d;--verm:#d70015;--laranja:#c25e00;--sombra:0 1px 2px #0000000d,0 10px 30px #00000014;--g1:#8ec5ff8c;--g2:#9ff0d080;--g3:#cdbcff73;--brilho:#ffffffb8;--reflexo:#fffffff2}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--painel:#1c1c1e;--campo:#2c2c2e;--borda:#2c2c2e;--txt:#f5f5f7;--fraco:#98989d;--ouro:#0a84ff;--verde:#30d158;--verm:#ff453a;--laranja:#ff9f0a;--sombra:0 10px 30px #00000059;--g1:#0a4d9e73;--g2:#0b6b5266;--g3:#4b2a8f66;--brilho:#ffffff24;--reflexo:#ffffff33}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font:17px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+body{margin:0;background-color:var(--bg);background-image:radial-gradient(70vmax 70vmax at 0% 0%,var(--g1),transparent 60%),radial-gradient(60vmax 60vmax at 100% 15%,var(--g2),transparent 60%),radial-gradient(70vmax 70vmax at 55% 115%,var(--g3),transparent 60%);background-attachment:fixed;color:var(--txt);font:17px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
 header{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 20px;background:var(--bg);background:color-mix(in srgb,var(--bg) 75%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--borda)}
 .marca{display:flex;align-items:center;gap:10px}.marca img{height:34px}.marca b{font-weight:600;font-size:16px}.marca small{display:block;color:var(--fraco);font-size:12px}
 #quem{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--fraco);text-align:right}
@@ -64,6 +64,11 @@ th{color:var(--fraco);font-size:12px;font-weight:600;text-transform:uppercase;le
 @media(max-width:640px){h1{font-size:25px}.ag{grid-template-columns:64px 1fr}.ag-foto{display:none}.ag-acoes{grid-column:1/-1;flex-direction:row}.marca small{display:none}}
 footer{text-align:center;padding:0 16px 28px}footer button{background:none;color:var(--fraco);font-size:12px;font-weight:400;padding:4px 8px}
 .faixa{text-align:center;font-size:12px;color:var(--fraco);background:var(--campo);padding:6px 12px}
+.entrada,dialog,.abas,header{background:color-mix(in srgb,var(--painel) 50%,transparent);-webkit-backdrop-filter:blur(28px) saturate(190%);backdrop-filter:blur(28px) saturate(190%);border:1px solid var(--brilho);box-shadow:inset 0 1px 0 var(--reflexo),inset 0 -1px 0 #00000008,var(--sombra)}
+header{border-width:0 0 1px;box-shadow:inset 0 -1px 0 #0000000a}
+.entrada input,dialog input,dialog select,dialog textarea{background-color:color-mix(in srgb,var(--campo) 60%,transparent)}
+.abas button{background:color-mix(in srgb,var(--painel) 88%,transparent);box-shadow:inset 0 1px 0 var(--reflexo),0 1px 5px #00000026}.abas button.sec{background:none;box-shadow:none}
+.entrada{max-width:400px;margin:5vh auto 24px;padding:32px 28px;border-radius:28px}.entrada h1,.entrada h2{text-align:center}.entrada h1{margin-bottom:22px}
 main.entra>*{animation:entra .3s ease both}dialog[open]{animation:entra .22s ease}@keyframes entra{from{opacity:0;transform:translateY(10px)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{@page{size:landscape;margin:12mm}header,footer,.noprint,.faixa{display:none!important}body{background:#fff!important;color:#000}main{max-width:none;padding:0}
@@ -106,7 +111,7 @@ const campos = (extra = '') => `<label>Nome completo</label><input name="complet
 const link = (txt, fn) => `<button type="button" class="lnk" onclick="${fn}">${txt}</button>`;
 function formulario(titulo, sub, corpo, botao, acao, rodape = '') {
   $('#quem').innerHTML = '';
-  app.innerHTML = `<div class="card" style="max-width:400px;margin:24px auto;padding:28px"><img class="selo" src="/img/brasao.png" alt="">
+  app.innerHTML = `<div class="card entrada"><img class="selo" src="/img/brasao.png" alt="">
   <h2>${sub}</h2><h1>${titulo}</h1><form id="f" novalidate>${corpo}<p class="erro" id="e"></p><button style="width:100%;margin-top:4px">${botao}</button></form>${rodape}</div>`;
   scrollTo(0, 0); anima();
   $('#f').oninput = (ev) => { $('#e').textContent = ''; ev.target.classList.remove('falta'); };
