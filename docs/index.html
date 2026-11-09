@@ -4,67 +4,78 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Viaturas CMBEL</title>
 <style>
-:root{--bg:#0e1410;--painel:#16201a;--borda:#2c3d31;--txt:#e6efe8;--fraco:#93a598;--verde:#4caf6a;--ouro:#d4b24c;--verm:#d9534f;--azul:#5aa0d8}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#1b2a20,var(--bg) 70%);color:var(--txt);font:15px/1.4 system-ui,sans-serif;min-height:100vh}
-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--borda);background:#0b100dcc}
-header b{letter-spacing:2px;color:var(--ouro)}main{max-width:900px;margin:auto;padding:16px}
-.card{background:var(--painel);border:1px solid var(--borda);border-radius:12px;padding:18px;margin-bottom:14px}
-h2{margin:0 0 4px;font-size:13px;letter-spacing:3px;color:var(--ouro);text-transform:uppercase}h1{margin:0 0 14px;font-size:22px}
-input,textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--borda);background:#0b100d;color:var(--txt);font:inherit;margin:6px 0 12px}
-label{font-size:13px;color:var(--fraco)}button{cursor:pointer;font:inherit;border:0;border-radius:8px;padding:12px 18px;background:var(--verde);color:#08120b;font-weight:700}
-button.sec{background:transparent;color:var(--txt);border:1px solid var(--borda)}button:disabled{opacity:.4;cursor:default}
-.erro{color:var(--verm);min-height:20px}.falta{border-color:var(--verm)!important}.erro:not(:empty){background:#d9534f22;border:1px solid var(--verm);padding:10px 12px;border-radius:8px;font-weight:600}.garagem{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
-.vt{background:var(--painel);border:2px solid var(--borda);border-radius:14px;padding:14px;cursor:pointer;transition:.15s;text-align:left;color:var(--txt);font-weight:400;width:100%}
-.vt:hover,.vt.sel{border-color:var(--ouro);transform:translateY(-3px);box-shadow:0 8px 24px #0008}
-.vt.off .foto{filter:grayscale(1) brightness(.6)}.vt.off{opacity:.85}
-.fiscal{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.fiscal .todo{grid-column:1/-1}
-.chave{display:flex;align-items:center;gap:8px;margin:6px 0 12px}.chave input{width:auto;margin:0}
-.foto{width:100%;height:150px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;filter:saturate(.9)}
-.marca{display:flex;align-items:center;gap:10px}.marca img{height:40px}.marca small{display:block;color:var(--fraco);font-size:11px;letter-spacing:1px}
-footer{text-align:center;color:var(--fraco);font-size:11px;padding:20px 16px}footer a{color:var(--fraco)}
-.selo{display:block;height:110px;margin:0 auto 10px}.vt .nome{font-weight:700;font-size:17px}
-.st{display:inline-flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
-.st i{width:9px;height:9px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
-.livre{color:var(--verde)}.missao{color:var(--verm)}.reserv{color:var(--ouro)}
-.barra{display:flex;gap:6px;margin:10px 0 18px}.barra span{flex:1;height:6px;border-radius:3px;background:var(--borda)}.barra span.on{background:var(--ouro)}
-.linha{display:flex;gap:10px;flex-wrap:wrap}.linha>*{flex:1;min-width:130px}
-.ped{border-left:3px solid var(--ouro);padding:8px 12px;margin:8px 0;background:#0b100d;border-radius:0 8px 8px 0}
-.ped small{color:var(--fraco)}.agora{border-color:var(--verm)}.acoes{display:flex;gap:10px;justify-content:space-between;margin-top:8px}
-dialog{background:var(--painel);color:var(--txt);border:1px solid var(--ouro);border-radius:14px;max-width:520px;width:calc(100% - 32px)}dialog::backdrop{background:#000a}
-.dias{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 12px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--borda) transparent}
-.dia{flex:0 0 64px;display:flex;flex-direction:column;align-items:center;padding:8px 0;background:#0b100d;color:var(--txt);border:1px solid var(--borda);font-weight:400;scroll-snap-align:start}
-.dia b{font-size:22px}.dia small{font-size:11px;color:var(--fraco);text-transform:uppercase}
-.horas{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px;padding:6px 0 14px}
-.hora{padding:9px 0;background:#0b100d;color:var(--txt);border:1px solid var(--borda);font-weight:600}
-.dia:not(:disabled):hover,.hora:not(:disabled):hover{border-color:var(--ouro)}
-.dia.sel,.hora.sel{background:var(--ouro);color:#14110a;border-color:var(--ouro)}.dia.sel small{color:#14110a}
-.hora:disabled{text-decoration:line-through;opacity:.3}
-.abas{display:flex;gap:8px;margin:8px 0 16px;flex-wrap:wrap}.abas button{flex:1}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--borda);text-align:left;vertical-align:top}th{color:var(--ouro);font-size:12px;letter-spacing:1px}
-.quadro{overflow-x:auto}button.mini{padding:5px 9px;font-size:13px;margin:2px 0}.impresso{display:none}
-.dia-t{margin:22px 0 8px;font-size:15px;font-weight:400;color:var(--fraco)}.dia-t b{color:var(--txt)}
-.ag{display:grid;grid-template-columns:78px 120px 1fr auto;gap:14px;align-items:center;background:var(--painel);border:1px solid var(--borda);border-left:4px solid var(--ouro);border-radius:12px;padding:12px 14px;margin-bottom:10px}
-.ag.andando{border-left-color:var(--verm)}.ag.passou{opacity:.6;border-left-color:var(--borda)}
-.ag-hora{display:flex;flex-direction:column;text-align:center}.ag-hora b{font-size:24px;line-height:1.1;margin-bottom:6px}.ag-hora span{font-size:16px;font-weight:600}.ag-hora small{font-size:10px;letter-spacing:1px;color:var(--fraco)}
-.ag-foto{width:120px;height:82px;object-fit:cover;border-radius:8px}.ag-info{display:grid;gap:3px;min-width:0}.ag-vt{font-weight:700;font-size:16px;color:var(--ouro)}
-.ag-acoes{display:flex;flex-direction:column;gap:2px}
-.chip{font-size:10px;letter-spacing:1px;padding:2px 8px;border-radius:99px;border:1px solid var(--borda);color:var(--fraco);vertical-align:middle;white-space:nowrap}.chip.verm{color:var(--verm);border-color:var(--verm)}
-@media(max-width:640px){.ag{grid-template-columns:70px 1fr}.ag-foto{display:none}.ag-acoes{grid-column:1/-1;flex-direction:row}}
-.vt.nova{display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;min-height:220px}.mais{font-size:44px;color:var(--ouro);line-height:1}
-main.entra>*{animation:entra .28s ease both}dialog[open]{animation:entra .2s ease}@keyframes entra{from{opacity:0;transform:translateY(10px)}}
-button{transition:filter .15s,transform .1s,border-color .15s,box-shadow .15s}button:not(:disabled):hover{filter:brightness(1.12)}button:not(:disabled):active{transform:scale(.97)}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--ouro);outline-offset:1px}
+:root{color-scheme:light dark;--bg:#f5f5f7;--painel:#fff;--campo:#ececf0;--borda:#e0e0e5;--txt:#1d1d1f;--fraco:#6e6e73;--ouro:#0071e3;--verde:#248a3d;--verm:#d70015;--laranja:#c25e00;--sombra:0 1px 2px #0000000d,0 6px 20px #0000000d}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--painel:#1c1c1e;--campo:#2c2c2e;--borda:#2c2c2e;--txt:#f5f5f7;--fraco:#98989d;--ouro:#0a84ff;--verde:#30d158;--verm:#ff453a;--laranja:#ff9f0a;--sombra:0 0 0 #0000}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:17px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+header{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 20px;background:var(--bg);background:color-mix(in srgb,var(--bg) 75%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--borda)}
+.marca{display:flex;align-items:center;gap:10px}.marca img{height:34px}.marca b{font-weight:600;font-size:16px}.marca small{display:block;color:var(--fraco);font-size:12px}
+#quem{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--fraco);text-align:right}
+main{max-width:980px;margin:auto;padding:28px 20px 40px}
+.card{background:var(--painel);border-radius:20px;padding:24px;margin-bottom:16px;box-shadow:var(--sombra)}
+h1{margin:0 0 16px;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+h2{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--fraco);text-transform:uppercase;letter-spacing:.04em}
+p{margin:0 0 14px}
+label{font-size:14px;color:var(--fraco)}
+input,textarea,select{width:100%;padding:13px 14px;border-radius:12px;border:1px solid transparent;background:var(--campo);color:var(--txt);font:inherit;margin:6px 0 14px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ouro);box-shadow:0 0 0 4px color-mix(in srgb,var(--ouro) 22%,transparent)}
+button{cursor:pointer;font:inherit;font-weight:600;border:0;border-radius:980px;padding:12px 22px;background:var(--ouro);color:#fff;transition:filter .15s,transform .1s,box-shadow .15s,opacity .15s}
+button.sec{background:var(--campo);color:var(--txt)}button.lnk{background:none;color:var(--ouro);font-weight:400;width:100%;padding:9px;margin-top:4px}
+button.mini{padding:6px 13px;font-size:14px;font-weight:500}
+button:disabled{opacity:.35;cursor:default}button:not(:disabled):hover{filter:brightness(1.08)}button:not(:disabled):active{transform:scale(.97)}
+.erro{color:var(--verm);font-size:15px;margin:0 0 12px}.erro:not(:empty){background:color-mix(in srgb,var(--verm) 10%,transparent);padding:10px 14px;border-radius:12px}
+.falta{border-color:var(--verm)!important}
+.garagem{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.vt{background:var(--painel);border-radius:20px;padding:0 0 16px;overflow:hidden;text-align:left;color:var(--txt);font-weight:400;width:100%;box-shadow:var(--sombra);outline:3px solid transparent;outline-offset:-3px}
+.vt:not(:disabled):hover{transform:translateY(-2px);filter:none;box-shadow:0 2px 4px #00000012,0 14px 34px #0000001f}.vt.sel{outline-color:var(--ouro)}
+.foto{width:100%;height:160px;object-fit:cover;border-radius:14px;display:block;margin-bottom:12px}
+.vt .foto{border-radius:0}.vt.off .foto{filter:grayscale(1);opacity:.5}.vt .nome,.vt .st{padding:0 16px}
+.nome{font-weight:600;font-size:17px}
+.st{display:flex;align-items:baseline;gap:7px;font-size:14px;color:var(--fraco);margin-top:2px}.st i{width:8px;height:8px;border-radius:50%;flex:none;background:var(--c,var(--fraco))}
+.livre{--c:var(--verde)}.missao{--c:var(--verm)}.reserv{--c:var(--laranja)}
+.vt.nova{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;box-shadow:none;border:1.5px dashed var(--borda);min-height:230px;padding:0;color:var(--ouro)}.mais{font-size:40px;font-weight:300;line-height:1}
+.selo{display:block;height:84px;margin:4px auto 18px}
+.barra{display:flex;gap:6px;margin:10px 0 22px}.barra span{flex:1;height:4px;border-radius:2px;background:var(--campo)}.barra span.on{background:var(--ouro)}
+.linha{display:flex;gap:12px;flex-wrap:wrap}.linha>*{flex:1;min-width:130px}
+.ped{background:var(--campo);border-radius:14px;padding:12px 14px;margin:8px 0}.ped small{color:var(--fraco);font-size:14px}.agora{box-shadow:inset 3px 0 var(--verm)}
+.acoes{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:12px}.acoes button{white-space:nowrap;flex:none}
+.chave{display:flex;align-items:center;gap:10px;margin:4px 0 14px;font-size:16px;color:var(--txt)}.chave input{width:20px;height:20px;margin:0;accent-color:var(--verde)}
+dialog{background:var(--painel);color:var(--txt);border:0;border-radius:22px;padding:24px;max-width:520px;width:calc(100% - 32px);box-shadow:0 24px 70px #00000040}
+dialog::backdrop{background:#00000059;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.dias{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 14px;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.dia{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;padding:8px 0;border-radius:14px;background:var(--campo);color:var(--txt);font-weight:400;scroll-snap-align:start}
+.dia b{font-size:20px;font-weight:600}.dia small{font-size:11px;color:var(--fraco);text-transform:uppercase}
+.horas{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px;padding:6px 0 16px}
+.hora{padding:9px 0;border-radius:10px;background:var(--campo);color:var(--txt);font-weight:500;font-size:15px}
+.dia.sel,.hora.sel{background:var(--ouro);color:#fff}.dia.sel small{color:#ffffffcc}
+.dia:disabled,.hora:disabled{opacity:.3}.hora:disabled{text-decoration:line-through}
+.abas{display:flex;gap:2px;background:var(--campo);padding:3px;border-radius:12px;margin:0 auto 28px;max-width:400px}
+.abas button{flex:1;padding:7px 10px;border-radius:9px;font-size:15px;font-weight:500;background:var(--painel);color:var(--txt);box-shadow:0 1px 4px #00000026}.abas button.sec{background:none;box-shadow:none}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:12px 8px;border-bottom:1px solid var(--borda);text-align:left;vertical-align:top}tr:last-child td{border-bottom:0}
+th{color:var(--fraco);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.quadro{overflow-x:auto;background:var(--painel);border-radius:20px;padding:6px 16px;box-shadow:var(--sombra)}.impresso{display:none}
+.dia-t{margin:28px 0 10px;font-size:15px;font-weight:400;color:var(--fraco)}.dia-t b{color:var(--txt);font-weight:600}
+.ag{display:grid;grid-template-columns:72px 120px 1fr auto;gap:16px;align-items:center;background:var(--painel);border-left:4px solid transparent;border-radius:20px;padding:14px 18px 14px 14px;margin-bottom:10px;box-shadow:var(--sombra)}
+.ag.andando{border-left-color:var(--verm)}.ag.passou{opacity:.55}
+.ag-hora{display:flex;flex-direction:column;text-align:center}.ag-hora b{font-size:22px;font-weight:700;line-height:1.1;margin-bottom:6px}.ag-hora span{font-size:16px;font-weight:500}.ag-hora small{font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--fraco)}
+.ag-foto{width:120px;height:82px;object-fit:cover;border-radius:12px}.ag-info{display:grid;gap:2px;min-width:0;font-size:15px}.ag-vt{font-weight:600;font-size:17px;margin-bottom:2px}.rot{color:var(--fraco)}
+.ag-acoes{display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--campo);color:var(--fraco);vertical-align:middle;white-space:nowrap}.chip.verm{color:var(--verm);background:color-mix(in srgb,var(--verm) 12%,transparent)}
+@media(max-width:640px){h1{font-size:25px}.ag{grid-template-columns:64px 1fr}.ag-foto{display:none}.ag-acoes{grid-column:1/-1;flex-direction:row}.marca small{display:none}}
+footer{text-align:center;padding:0 16px 28px}footer button{background:none;color:var(--fraco);font-size:12px;font-weight:400;padding:4px 8px}
+.faixa{text-align:center;font-size:12px;color:var(--fraco);background:var(--campo);padding:6px 12px}
+main.entra>*{animation:entra .3s ease both}dialog[open]{animation:entra .22s ease}@keyframes entra{from{opacity:0;transform:translateY(10px)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{@page{size:landscape;margin:12mm}header,footer,.noprint,.faixa{display:none!important}body{background:#fff!important;color:#000}main{max-width:none;padding:0}
   .impresso{display:block}.cab{display:flex;gap:14px;align-items:center;margin-bottom:14px;font-size:15px}.cab img{height:70px}.assin{margin-top:40px}
-  table{font-size:12px}th,td{border:1px solid #000;color:#000}th{background:#eee}}
+  table{font-size:12px}th,td{border:1px solid #000;color:#000;padding:6px}th{background:#eee}}
 </style>
 </head>
-<body><div class="faixa" style="background:#d4b24c;color:#14110a;text-align:center;padding:6px;font-size:13px;font-weight:700">DEMONSTRAÇÃO · os pedidos ficam salvos só neste aparelho · senha de primeiro acesso: 123</div>
-<header><div class="marca"><img src="img/brasao.png" alt="Brasão do CMBEL"><div><b>VIATURAS CMBEL</b><small>COLÉGIO MILITAR DE BELÉM</small></div></div><span id="quem"></span></header>
+<body><div class="faixa">Demonstração · os dados ficam salvos só neste aparelho</div>
+<header><div class="marca"><img src="img/brasao.png" alt="Brasão do CMBEL"><div><b>Viaturas CMBEL</b><small>Colégio Militar de Belém</small></div></div><span id="quem"></span></header>
 <main id="app"></main>
 <dialog id="dlg"></dialog>
-<footer>Fotos: VW 15.210 — André Gustavo Stumpf (CC BY 2.0); Chevrolet Spin — オーバードライブ83 (CC BY-SA 4.0); Nissan Versa — Alexander Migl (CC BY-SA 4.0); Ônibus — MCTI (CC BY 2.0); Ambulância — André Gustavo Stumpf (CC BY 2.0); Fiat Doblò — Alexander-93 (CC BY-SA 4.0); via Wikimedia Commons. Brasão do CMBEL: domínio público.</footer>
+<footer><button onclick="creditos()">Créditos das fotos</button></footer>
 <script src="demo-api.js"></script><script>
 const $ = (s) => document.querySelector(s), app = $('#app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -82,7 +93,7 @@ let eu, frota, rascunho;
 
 async function iniciar() {
   try { eu = await api('/api/eu'); } catch { return telaLogin(); }
-  $('#quem').innerHTML = `${esc(eu.posto)} ${esc(eu.nome)} <button class="sec" onclick="sair()">Sair</button>`;
+  $('#quem').innerHTML = `${esc(eu.posto)} ${esc(eu.nome)} <button class="sec mini" onclick="sair()">Sair</button>`;
   return eu.trocarSenha ? telaPerfil() : telaGaragem();
 }
 async function sair() { await api('/api/sair', {}); location.reload(); }
@@ -92,20 +103,20 @@ const campos = (extra = '') => `<label>Nome completo</label><input name="complet
   <label>Nome de guerra</label><input name="nome" required style="text-transform:uppercase">
   <label>Posto/Graduação</label><select name="posto" required>${POSTOS.map((p) => `<option>${p}</option>`).join('')}</select>
   <label>Divisão/Seção</label><input name="secao" placeholder="Ex.: Div Adm, Corpo de Alunos, 1ª Cia" required>${extra}`;
-const link = (txt, fn) => `<button type="button" class="sec" style="width:100%;margin-top:8px" onclick="${fn}">${txt}</button>`;
+const link = (txt, fn) => `<button type="button" class="lnk" onclick="${fn}">${txt}</button>`;
 function formulario(titulo, sub, corpo, botao, acao, rodape = '') {
   $('#quem').innerHTML = '';
-  app.innerHTML = `<div class="card" style="max-width:400px;margin:30px auto"><img class="selo" src="img/brasao.png" alt="">
-  <h2>${sub}</h2><h1>${titulo}</h1><form id="f" novalidate>${corpo}<p class="erro" id="e"></p><button style="width:100%">${botao}</button></form>${rodape}</div>`;
+  app.innerHTML = `<div class="card" style="max-width:400px;margin:24px auto;padding:28px"><img class="selo" src="img/brasao.png" alt="">
+  <h2>${sub}</h2><h1>${titulo}</h1><form id="f" novalidate>${corpo}<p class="erro" id="e"></p><button style="width:100%;margin-top:4px">${botao}</button></form>${rodape}</div>`;
   scrollTo(0, 0); anima();
   $('#f').oninput = (ev) => { $('#e').textContent = ''; ev.target.classList.remove('falta'); };
   $('#f').onsubmit = async (ev) => { ev.preventDefault();
     const faltam = [...ev.target.elements].filter((el) => el.required && !el.value.trim());
     faltam.forEach((el) => el.classList.add('falta'));
-    if (faltam.length) { $('#e').textContent = '⚠ Preencha: ' + faltam.map((el) => el.previousElementSibling?.textContent.split(' —')[0] || el.name).join(', ') + '.';
+    if (faltam.length) { $('#e').textContent = 'Preencha: ' + faltam.map((el) => el.previousElementSibling?.textContent.split(' —')[0] || el.name).join(', ') + '.';
       return faltam[0].focus(); }
     const b = ev.target.querySelector('button:not([type])'); b.disabled = true;
-    try { await acao(Object.fromEntries(new FormData(ev.target))); } catch (e) { $('#e').textContent = '⚠ ' + e.message; $('#e').scrollIntoView({ block: 'center', behavior: 'smooth' }); } b.disabled = false; };
+    try { await acao(Object.fromEntries(new FormData(ev.target))); } catch (e) { $('#e').textContent = e.message; $('#e').scrollIntoView({ block: 'center', behavior: 'smooth' }); } b.disabled = false; };
 }
 function telaLogin(aviso = '') {
   formulario('Identifique-se', 'Acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" autocomplete="username" required>
@@ -114,19 +125,19 @@ function telaLogin(aviso = '') {
     ${aviso ? `<p style="color:var(--verde)">${esc(aviso)}</p>` : ''}`, 'Entrar',
     async (d) => { await api('/api/login', d); iniciar(); },
     link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()')
-    + `<hr style="border:0;border-top:1px solid var(--borda);margin:16px 0 8px">` + link('🔐 Entrar como administrador', 'telaAdminLogin()'));
+    + `<hr style="border:0;border-top:1px solid var(--borda);margin:12px 0 4px">` + link('Entrar como administrador', 'telaAdminLogin()'));
 }
 function telaCriar() {
   formulario('Criar conta', 'Primeiro acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" required>
     <p><small style="color:var(--fraco)">A conta nasce com a senha de primeiro acesso repassada pela seção. Ao entrar, você cria sua senha pessoal.</small></p>`,
     'Criar conta', async (d) => { await api('/api/criar-conta', d); telaLogin('Conta criada. Entre com a senha de primeiro acesso.'); },
-    link('◀ Voltar', 'telaLogin()'));
+    link('Voltar', 'telaLogin()'));
 }
 function telaEsqueci() {
   formulario('Esqueci minha senha', 'Recuperar acesso', `<p><small style="color:var(--fraco)">Informe os mesmos dados do seu cadastro. Se conferirem, você cria uma senha nova.</small></p>
     <label>Identidade militar</label><input name="identidade" inputmode="numeric" required>${campos(`<label>Crie sua senha — <b>mínimo 6 letras ou números</b> (ex.: cordeiro26)</label><input name="senha" type="password" autocomplete="new-password" required>`)}`,
     'Criar senha nova', async (d) => { await api('/api/recuperar-senha', d); telaLogin('Senha alterada. Entre com a senha nova.'); },
-    link('◀ Voltar', 'telaLogin()'));
+    link('Voltar', 'telaLogin()'));
 }
 function telaPerfil() {
   formulario('Complete seu cadastro', 'Primeiro acesso', `<p><small style="color:var(--fraco)">Guarde bem estes dados: eles servem para recuperar a senha.</small></p>
@@ -149,12 +160,12 @@ const aapi = async (rota, dados) => { await api('/api/admin/' + rota, { ...dados
 const vtDe = (id) => adados.viaturas.find((v) => v.id === id);
 function telaAdminLogin() {
   formulario('Perfil administrativo', 'Acesso restrito', `<label>Senha do perfil administrativo</label><input name="senha_admin" type="password" inputmode="numeric" autocomplete="off" required>`,
-    'Acessar', (d) => entrarAdmin(d), link('◀ Voltar', 'telaLogin()'));
+    'Acessar', (d) => entrarAdmin(d), link('Voltar', 'telaLogin()'));
   $('#f input').focus();
 }
 function telaAdmin(nova) {
-  $('#quem').innerHTML = `<b style="color:var(--ouro)">PERFIL ADMINISTRATIVO</b> <button class="sec" onclick="sairAdmin()">Sair</button>`;
-  const abas = [['agenda', '📅 Agenda'], ['viaturas', '🚐 Viaturas'], ['militares', '👤 Militares']]
+  $('#quem').innerHTML = `Administrador <button class="sec mini" onclick="sairAdmin()">Sair</button>`;
+  const abas = [['agenda', 'Agenda'], ['viaturas', 'Viaturas'], ['militares', 'Militares']]
     .map(([k, t]) => `<button class="${aba === k ? '' : 'sec'}" onclick="aba='${k}';telaAdmin(true)">${t}</button>`).join('');
   app.innerHTML = `<div class="abas noprint">${abas}</div>${{ agenda: aAgenda, viaturas: aViaturas, militares: aMilitares }[aba]()}`;
   if (nova) { scrollTo(0, 0); anima(); }
@@ -173,15 +184,15 @@ function aAgenda() {
       <div class="ag-hora"><small>SAÍDA</small><b>${hm(p.inicio)}</b><small>RETORNO</small><span>${hm(p.fim)}</span>${outroDia}</div>
       <img class="ag-foto" src="${fotoSrc(v)}" alt="">
       <div class="ag-info"><div class="ag-vt">${esc(v?.nome || p.viatura)}${v?.placa ? ` <small>· ${esc(v.placa)}</small>` : ''}
-          ${agoraMesmo ? '<span class="chip verm">EM MISSÃO AGORA</span>' : passou ? '<span class="chip">CONCLUÍDA</span>' : ''}</div>
-        <div>📍 Destino: <b>${esc(p.destino)}</b></div><div>🎯 Missão: ${esc(p.missao)}</div>
-        <div>👤 Solicitante: <b>${esc(p.posto)} ${esc(p.nome)}</b>${p.secao ? ` · ${esc(p.secao)}` : ''}</div></div>
+          ${agoraMesmo ? '<span class="chip verm">Em missão agora</span>' : passou ? '<span class="chip">Concluída</span>' : ''}</div>
+        <div><span class="rot">Destino</span> ${esc(p.destino)}</div><div><span class="rot">Missão</span> ${esc(p.missao)}</div>
+        <div><span class="rot">Solicitante</span> ${esc(p.posto)} ${esc(p.nome)}${p.secao ? ` · ${esc(p.secao)}` : ''}</div></div>
       <div class="ag-acoes"><button class="sec mini" onclick="editarMissao(${p.id})">Editar</button>
         <button class="sec mini" onclick="confirmar('Excluir esta missão?').then((s)=>s&&aapi('pedido-excluir',{id:${p.id}}))">Excluir</button></div></div>`; };
   const porDia = (lista) => { let ult; return lista.map((p) => { const d = meiaNoite(p.inicio), t = d !== ult ? tituloDia(p.inicio) : ''; ult = d; return t + cartao(p); }).join(''); };
   return `<div class="noprint"><div class="acoes" style="align-items:center;margin:0"><div><h1 style="margin:0">Agenda de missões</h1>
       <small style="color:var(--fraco)">${fut.length} ${fut.length === 1 ? 'missão a cumprir' : 'missões a cumprir'}${andando ? ` · ${andando} em andamento agora` : ''}</small></div>
-      <button onclick="print()">🖨 Imprimir quadro</button></div>
+      <button class="sec" onclick="print()">Imprimir</button></div>
     ${porDia(fut) || '<div class="card" style="margin-top:16px;text-align:center;color:var(--fraco)">Nenhuma missão agendada.</div>'}
     ${pas.length ? `<h2 style="margin-top:28px">Missões anteriores</h2>${porDia(pas)}` : ''}</div>
     <div class="impresso"><div class="cab"><img src="img/brasao.png" alt=""><div><b>COLÉGIO MILITAR DE BELÉM</b><br>Quadro de Missões de Viaturas<br><small>Emitido em ${fmt(agora)}</small></div></div>
@@ -197,7 +208,7 @@ function editarMissao(id) {
     <label>Destino</label><input name="destino" value="${esc(p.destino)}" required><label>Missão</label><textarea name="missao" rows="3" required>${esc(p.missao)}</textarea>
     <p class="erro" id="em"></p><div class="acoes"><button type="button" class="sec" onclick="dlg.close()">Cancelar</button><button>Salvar</button></div></form>`;
   $('#fm').onsubmit = async (ev) => { ev.preventDefault(); const d = Object.fromEntries(new FormData(ev.target));
-    try { await aapi('pedido', { ...d, id, inicio: +new Date(d.inicio), fim: +new Date(d.fim) }); dlg.close(); } catch (e) { $('#em').textContent = '⚠ ' + e.message; } };
+    try { await aapi('pedido', { ...d, id, inicio: +new Date(d.inicio), fim: +new Date(d.fim) }); dlg.close(); } catch (e) { $('#em').textContent = e.message; } };
   $('#dlg').showModal();
 }
 
@@ -208,7 +219,7 @@ function aViaturas() {
     <div class="garagem">${adados.viaturas.map((v) => `<button class="vt ${v.disponivel ? '' : 'off'}" onclick="editarViatura('${v.id}')">${foto(v)}
       <div class="nome">${esc(v.nome)}${v.placa ? ` <small style="color:var(--fraco);font-weight:400">· ${esc(v.placa)}</small>` : ''}</div>
       <div class="st ${v.disponivel ? 'livre' : 'missao'}"><i></i>${v.disponivel ? 'Disponível' : 'Indisponível · ' + esc(v.motivo || '')}</div></button>`).join('')}
-      <button class="vt nova" onclick="editarViatura()"><div class="mais">＋</div><div class="nome">Nova viatura</div></button></div>`;
+      <button class="vt nova" onclick="editarViatura()"><div class="mais">+</div><div class="nome">Nova viatura</div></button></div>`;
 }
 // Reduz a foto escolhida para caber no banco (máx. 800 px de largura, JPEG).
 function lerFoto(arquivo) {
@@ -224,7 +235,7 @@ function editarViatura(id) {
   let novaFoto = v.foto || '';
   $('#dlg').innerHTML = `<h1>${id ? 'Editar viatura' : 'Nova viatura'}</h1><form id="fm">
     <img class="foto" id="pv" src="${fotoSrc(v)}" alt="" style="height:190px">
-    <div class="linha" style="margin-bottom:12px"><button type="button" class="sec" onclick="this.form.arq.click()">📷 Trocar foto</button><button type="button" class="sec" id="padrao">Usar foto padrão</button></div>
+    <div class="linha" style="margin-bottom:12px"><button type="button" class="sec" onclick="this.form.arq.click()">Trocar foto</button><button type="button" class="sec" id="padrao">Usar foto padrão</button></div>
     <input type="file" name="arq" accept="image/*" hidden>
     <label>Nome da viatura</label><input name="nome" value="${esc(v.nome || '')}" placeholder="Ex.: Ambulância 2" required>
     <div class="linha"><div><label>Categoria (foto padrão)</label><select name="tipo">${Object.entries(TIPOS).map(([k, [n]]) => `<option value="${k}" ${k === v.tipo ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
@@ -237,12 +248,12 @@ function editarViatura(id) {
   const f = $('#fm'), pv = $('#pv'), padrao = () => `img/${TIPOS[f.tipo.value][1]}`;
   const mot = () => { $('#mot').hidden = f.disponivel.checked; }; mot(); f.disponivel.onchange = mot;
   f.arq.onchange = async () => { if (!f.arq.files[0]) return;
-    try { novaFoto = await lerFoto(f.arq.files[0]); pv.src = novaFoto; $('#em').textContent = ''; } catch (e) { $('#em').textContent = '⚠ ' + e.message; } };
+    try { novaFoto = await lerFoto(f.arq.files[0]); pv.src = novaFoto; $('#em').textContent = ''; } catch (e) { $('#em').textContent = e.message; } };
   $('#padrao').onclick = () => { novaFoto = ''; pv.src = padrao(); };
   f.tipo.onchange = () => { if (!novaFoto) pv.src = padrao(); };
   if (id) $('#exc').onclick = async () => { if (await confirmar('Excluir esta viatura e todas as missões dela?')) aapi('remover', { id }); };
   f.onsubmit = async (ev) => { ev.preventDefault(); const d = Object.fromEntries(new FormData(f)); delete d.arq;
-    try { await aapi('viatura', { ...d, id: id || '', disponivel: f.disponivel.checked, foto: novaFoto }); dlg.close(); } catch (e) { $('#em').textContent = '⚠ ' + e.message; } };
+    try { await aapi('viatura', { ...d, id: id || '', disponivel: f.disponivel.checked, foto: novaFoto }); dlg.close(); } catch (e) { $('#em').textContent = e.message; } };
   $('#dlg').showModal();
 }
 
@@ -274,15 +285,14 @@ function status(v) {
 
 async function telaGaragem() {
   frota = await api('/api/frota'); scrollTo(0, 0); anima();
-  app.innerHTML = `<h2>Garagem</h2><h1 style="margin-bottom:4px">Frota do Colégio Militar de Belém</h1>
-  <p style="color:var(--fraco);margin:0 0 14px">Clique numa viatura para ver a agenda dela ou fazer o pedido.</p>
+  app.innerHTML = `<div class="acoes" style="margin:0 0 20px"><div><h1 style="margin:0">Viaturas</h1><span style="color:var(--fraco);font-size:15px">Clique numa viatura para ver a agenda ou pedir.</span></div>
+  <button onclick="novaMissao()">Nova missão</button></div>
   <div class="garagem">${[...frota.viaturas].sort((a, b) => b.disponivel - a.disponivel).map((v) => { const s = status(v);
     return `<button class="vt ${v.disponivel ? '' : 'off'}" onclick="detalhe('${v.id}')">${foto(v)}<div class="nome">${esc(v.nome)}</div>
     <div class="st ${s.cls}"><i></i>${esc(s.txt)}</div></button>`; }).join('')}</div>
-  <div style="text-align:center;margin:22px 0"><button onclick="novaMissao()" style="font-size:17px;padding:16px 30px">▶ Nova missão</button></div>
-  <div class="card"><h2>Minhas missões</h2>${frota.pedidos.filter((p) => p.identidade === eu.identidade && p.fim > frota.agora).map((p) =>
+  <div class="card" style="margin-top:24px"><h2>Minhas missões</h2>${frota.pedidos.filter((p) => p.identidade === eu.identidade && p.fim > frota.agora).map((p) =>
     `<div class="ped">${esc(nomeVt(p.viatura))} → <b>${esc(p.destino)}</b><br><small>${fmt(p.inicio)} até ${fmt(p.fim)} · ${esc(p.missao)}</small>
-    <br><button class="sec" style="padding:6px 10px;margin-top:6px" onclick="cancelar(${p.id})">Cancelar</button></div>`).join('') || '<small style="color:var(--fraco)">Nenhuma missão agendada.</small>'}</div>`;
+    <br><button class="sec mini" style="margin-top:8px" onclick="cancelar(${p.id})">Cancelar missão</button></div>`).join('') || '<small style="color:var(--fraco)">Nenhuma missão agendada.</small>'}</div>`;
 }
 const nomeVt = (id) => frota.viaturas.find((v) => v.id === id)?.nome;
 
@@ -308,6 +318,10 @@ function confirmar(msg, sim = 'Sim', nao = 'Não') {
   });
 }
 const avisar = (msg) => confirmar(msg, 'OK', '');
+function creditos() {
+  $('#dlg').innerHTML = `<h1>Créditos das fotos</h1><p style="font-size:14px;color:var(--fraco)">VW 15.210 — André Gustavo Stumpf (CC BY 2.0); Chevrolet Spin — オーバードライブ83 (CC BY-SA 4.0); Nissan Versa — Alexander Migl (CC BY-SA 4.0); Ônibus — MCTI (CC BY 2.0); Ambulância — André Gustavo Stumpf (CC BY 2.0); Fiat Doblò — Alexander-93 (CC BY-SA 4.0); via Wikimedia Commons. Brasão do CMBEL: domínio público. Fotos enviadas pelo administrador pertencem ao CMBEL.</p><div class="acoes"><span></span><button onclick="dlg.close()">OK</button></div>`;
+  $('#dlg').showModal();
+}
 
 // Wizard em etapas: Viatura → Quando → Onde → Missão → Confirmar
 const ETAPAS = ['Viatura', 'Quando', 'Onde', 'Missão', 'Confirmar'];
@@ -323,8 +337,8 @@ function etapa() {
       <div class="ped"><b>${esc(nomeVt(r.viatura))}</b> → ${esc(r.destino)}<br><small>${fmt(r.ini)} até ${fmt(r.fim)}<br>Missão: ${esc(r.missao)}<br>Solicitante: ${esc(eu.posto)} ${esc(eu.nome)}</small></div>`,
   ][n]();
   app.innerHTML = `<div class="card"><h2>Etapa ${n + 1} de 5 · ${ETAPAS[n]}</h2><div class="barra">${ETAPAS.map((_, i) => `<span class="${i <= n ? 'on' : ''}"></span>`).join('')}</div>
-  ${corpo}<p class="erro" id="e"></p><div class="acoes"><button class="sec" onclick="${n ? 'voltar()' : 'telaGaragem()'}">${n ? '◀ Voltar' : 'Cancelar'}</button>
-  <button onclick="avancar()" ${n === 0 && !r.viatura ? 'disabled' : ''}>${n === 4 ? '✔ Confirmar pedido' : 'Avançar ▶'}</button></div></div>`;
+  ${corpo}<p class="erro" id="e"></p><div class="acoes"><button class="sec" onclick="${n ? 'voltar()' : 'telaGaragem()'}">${n ? 'Voltar' : 'Cancelar'}</button>
+  <button onclick="avancar()" ${n === 0 && !r.viatura ? 'disabled' : ''}>${n === 4 ? 'Confirmar pedido' : 'Continuar'}</button></div></div>`;
   app.querySelectorAll('input,textarea').forEach((el) => { el.oninput = () => { $('#e').textContent = ''; };
     el.onkeydown = (ev) => { if (ev.key === 'Enter' && (el.tagName === 'INPUT' || ev.ctrlKey)) { ev.preventDefault(); avancar(); } }; });
   if (r.etapaVista !== n) { r.etapaVista = n; scrollTo(0, 0); anima(); app.querySelector('input,textarea')?.focus(); }
@@ -345,12 +359,12 @@ function telaQuando(r) {
     return `<button class="hora ${r[chave] === m ? 'sel' : ''}" ${pode ? '' : 'disabled'} title="${pode ? '' : 'Indisponível'}" onclick="marcar('${chave}',${m})">${hhmm(m)}</button>`; }).join('')}</div>`;
   const hoje = meiaNoite(Date.now());
   let html = `<h1>Quando?</h1><p style="color:var(--fraco)">Antecedência mínima de 48 horas · horários riscados já estão ocupados.</p>
-    <label>📅 Dia da saída</label>${dias(hoje, 21, 'dia', (ms) => ms + 24 * H > limite)}`;
-  if (r.dia != null) html += `<label>🕗 Horário de saída</label>${horas(r.dia, 'hi', (t) => t >= limite && livre(t, t + 30 * 6e4))}`;
+    <label>Dia da saída</label>${dias(hoje, 21, 'dia', (ms) => ms + 24 * H > limite)}`;
+  if (r.dia != null) html += `<label>Horário de saída</label>${horas(r.dia, 'hi', (t) => t >= limite && livre(t, t + 30 * 6e4))}`;
   if (r.hi != null) { const ini = r.dia + r.hi * 6e4;
-    html += `<label>📅 Dia do retorno</label>${dias(r.dia, 7, 'diaV', (ms) => livre(ini, Math.max(ms, ini + 1)))}`;
-    if (r.diaV != null) html += `<label>🕓 Horário de retorno</label>${horas(r.diaV, 'hf', (t) => t > ini && livre(ini, t))}`; }
-  if (r.ini && r.fim) html += `<div class="ped">🚩 Saída <b>${fmt(r.ini)}</b> → Retorno <b>${fmt(r.fim)}</b> · ${((r.fim - r.ini) / H).toFixed(1).replace('.0', '')}h de missão</div>`;
+    html += `<label>Dia do retorno</label>${dias(r.dia, 7, 'diaV', (ms) => livre(ini, Math.max(ms, ini + 1)))}`;
+    if (r.diaV != null) html += `<label>Horário de retorno</label>${horas(r.diaV, 'hf', (t) => t > ini && livre(ini, t))}`; }
+  if (r.ini && r.fim) html += `<div class="ped">Saída <b>${fmt(r.ini)}</b> → Retorno <b>${fmt(r.fim)}</b> · ${((r.fim - r.ini) / H).toFixed(1).replace('.0', '')}h de missão</div>`;
   return html;
 }
 function marcar(chave, v) {
@@ -377,7 +391,7 @@ async function avancar() {
   if (r.etapa === 3 && !r.missao) return (e.textContent = 'Descreva a missão.');
   if (r.etapa < 4) { r.etapa++; return etapa(); }
   try { await api('/api/pedido', { viatura: r.viatura, inicio: r.ini, fim: r.fim, destino: r.destino, missao: r.missao });
-    await telaGaragem(); avisar('✔ Missão registrada!'); } catch (err) { e.textContent = err.message; }
+    await telaGaragem(); avisar('Missão registrada.'); } catch (err) { e.textContent = err.message; }
 }
 const dlg = $('#dlg');
 if (credAdmin) entrarAdmin(credAdmin).catch(sairAdmin); else iniciar();

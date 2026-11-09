@@ -4,7 +4,7 @@
   const H = 36e5, K = 'viaturas-demo';
   const carregar = () => { try { return JSON.parse(localStorage.getItem(K)); } catch { return null; } };
   let db = carregar();
-  if (!db) {
+  if (!db || !db.viaturas) { // sem dados, ou dados de uma demonstração antiga: começa do zero (sem recarregar a página)
     const d = (dias, h) => { const x = new Date(); x.setDate(x.getDate() + dias); x.setHours(h, 0, 0, 0); return +x; };
     const agora = new Date(); agora.setMinutes(0, 0, 0);
     db = {
@@ -24,7 +24,6 @@
     };
   }
   const salvar = () => { try { localStorage.setItem(K, JSON.stringify(db)); } catch {} };
-  if (!db.viaturas) { localStorage.removeItem(K); location.reload(); } // demo antiga salva no aparelho
   const normId = (v) => { const x = String(v || '').replace(/[\s.\-/]/g, ''); return /^\d{6,12}$/.test(x) ? x : null; };
   const comp = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
   const fraca = (s) => (s.length < 6 ? 'A nova senha precisa ter pelo menos 6 caracteres.'
