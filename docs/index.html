@@ -19,10 +19,10 @@ p{margin:0 0 14px}
 label{font-size:14px;color:var(--fraco)}
 input,textarea,select{width:100%;padding:13px 14px;border-radius:12px;border:1px solid transparent;background:var(--campo);color:var(--txt);font:inherit;margin:6px 0 14px}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ouro);box-shadow:0 0 0 4px color-mix(in srgb,var(--ouro) 22%,transparent)}
-button{cursor:pointer;font:inherit;font-weight:600;border:0;border-radius:980px;padding:12px 22px;background:var(--ouro);color:#fff;transition:filter .15s,transform .1s,box-shadow .15s,opacity .15s}
+button{cursor:pointer;font:inherit;font-weight:600;border:0;border-radius:980px;padding:12px 22px;background:var(--ouro);color:#fff;transition:transform .3s cubic-bezier(.2,.8,.2,1),filter .2s ease,box-shadow .25s ease,background-color .22s ease,opacity .2s ease}
 button.sec{background:var(--campo);color:var(--txt)}button.lnk{background:none;color:var(--ouro);font-weight:400;width:100%;padding:9px;margin-top:4px}
 button.mini{padding:6px 13px;font-size:14px;font-weight:500}
-button:disabled{opacity:.35;cursor:default}button:not(:disabled):hover{filter:brightness(1.08)}button:not(:disabled):active{transform:scale(.97)}
+button:disabled{opacity:.35;cursor:default}button:not(:disabled):hover{filter:brightness(1.08)}button:not(:disabled):active{transform:scale(.94);transition-duration:.06s}
 .erro{color:var(--verm);font-size:15px;margin:0 0 12px}.erro:not(:empty){background:color-mix(in srgb,var(--verm) 10%,transparent);padding:10px 14px;border-radius:12px}
 .falta{border-color:var(--verm)!important}
 .garagem{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
@@ -69,7 +69,17 @@ header{border-width:0 0 1px;box-shadow:inset 0 -1px 0 #0000000a}
 .entrada input,dialog input,dialog select,dialog textarea{background-color:color-mix(in srgb,var(--campo) 60%,transparent)}
 .abas button{background:color-mix(in srgb,var(--painel) 88%,transparent);box-shadow:inset 0 1px 0 var(--reflexo),0 1px 5px #00000026}.abas button.sec{background:none;box-shadow:none}
 .entrada{max-width:400px;margin:5vh auto 24px;padding:32px 28px;border-radius:28px}.entrada h1,.entrada h2{text-align:center}.entrada h1{margin-bottom:22px}
-main.entra>*{animation:entra .3s ease both}dialog[open]{animation:entra .22s ease}@keyframes entra{from{opacity:0;transform:translateY(10px)}}
+html{scroll-behavior:smooth}
+main.entra>*{animation:entra .5s cubic-bezier(.2,.8,.2,1) both}main.entra>*:nth-child(2){animation-delay:.06s}main.entra>*:nth-child(n+3){animation-delay:.12s}
+main.entra .garagem>*{animation:entra .55s cubic-bezier(.2,.8,.2,1) both}
+main.entra .garagem>*:nth-child(2){animation-delay:.05s}main.entra .garagem>*:nth-child(3){animation-delay:.1s}main.entra .garagem>*:nth-child(4){animation-delay:.15s}main.entra .garagem>*:nth-child(5){animation-delay:.2s}main.entra .garagem>*:nth-child(6){animation-delay:.25s}main.entra .garagem>*:nth-child(n+7){animation-delay:.3s}
+main.passo>*{animation:passo .42s cubic-bezier(.2,.8,.2,1) both}main.passoV>*{animation:passoV .42s cubic-bezier(.2,.8,.2,1) both}
+@keyframes entra{from{opacity:0;transform:translateY(16px) scale(.985)}}@keyframes passo{from{opacity:0;transform:translateX(36px)}}@keyframes passoV{from{opacity:0;transform:translateX(-36px)}}
+dialog[open]{animation:abre .34s cubic-bezier(.2,.9,.3,1.12)}dialog[open]::backdrop{animation:fundo .3s ease}dialog.sai{animation:fecha .16s ease forwards}dialog.sai::backdrop{animation:fundoSai .16s ease forwards}
+@keyframes abre{from{opacity:0;transform:scale(.92) translateY(12px)}}@keyframes fecha{to{opacity:0;transform:scale(.96)}}@keyframes fundo{from{opacity:0}}@keyframes fundoSai{to{opacity:0}}
+.erro:not(:empty){animation:treme .32s ease}@keyframes treme{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.dia,.hora,.abas button,input,select,textarea,.vt .foto{transition:background-color .22s ease,color .22s ease,border-color .2s ease,box-shadow .2s ease,transform .25s cubic-bezier(.2,.8,.2,1),filter .3s ease}
+.vt:not(:disabled):hover .foto{transform:scale(1.04)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{@page{size:landscape;margin:12mm}header,footer,.noprint,.faixa{display:none!important}body{background:#fff!important;color:#000}main{max-width:none;padding:0}
   .impresso{display:block}.cab{display:flex;gap:14px;align-items:center;margin-bottom:14px;font-size:15px}.cab img{height:70px}.assin{margin-top:40px}
@@ -80,7 +90,7 @@ main.entra>*{animation:entra .3s ease both}dialog[open]{animation:entra .22s eas
 <header><div class="marca"><img src="img/brasao.png" alt="Brasão do CMBEL"><div><b>Viaturas CMBEL</b><small>Colégio Militar de Belém</small></div></div><span id="quem"></span></header>
 <main id="app"></main>
 <dialog id="dlg"></dialog>
-<footer><button onclick="creditos()">Créditos das fotos</button></footer>
+<footer><button onclick="creditos()">Made in Zampiva</button></footer>
 <script src="demo-api.js"></script><script>
 const $ = (s) => document.querySelector(s), app = $('#app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -93,7 +103,8 @@ const TIPOS = { onibus: ['Ônibus', 'onibus.jpg'], ambulancia: ['Ambulância', '
   caminhao: ['Caminhão', '5ton.jpg'], van: ['Mini-van (Spin)', 'spin.jpg'], sedan: ['Sedã', 'versa.jpg'] };
 const fotoSrc = (v) => esc(v?.foto || `img/${(TIPOS[v?.tipo] || TIPOS.sedan)[1]}`);
 const foto = (v) => `<img class="foto" src="${fotoSrc(v)}" alt="">`;
-const anima = () => { app.classList.remove('entra'); void app.offsetWidth; app.classList.add('entra'); };
+const anima = (tipo = 'entra') => { app.classList.remove('entra', 'passo', 'passoV'); void app.offsetWidth; app.classList.add(tipo);
+  clearTimeout(anima.t); anima.t = setTimeout(() => app.classList.remove(tipo), 900); };
 let eu, frota, rascunho;
 
 async function iniciar() {
@@ -319,12 +330,12 @@ function confirmar(msg, sim = 'Sim', nao = 'Não') {
     $('#dlg').onclose = () => ok(false);
     $('#ds').onclick = () => { $('#dlg').onclose = null; $('#dlg').close(); ok(true); };
     if (nao) $('#dn').onclick = () => $('#dlg').close();
-    if (!$('#dlg').open) $('#dlg').showModal();
+    $('#dlg').showModal(); // cancela um fechamento em andamento e reabre se preciso
   });
 }
 const avisar = (msg) => confirmar(msg, 'OK', '');
 function creditos() {
-  $('#dlg').innerHTML = `<h1>Créditos das fotos</h1><p style="font-size:14px;color:var(--fraco)">VW 15.210 — André Gustavo Stumpf (CC BY 2.0); Chevrolet Spin — オーバードライブ83 (CC BY-SA 4.0); Nissan Versa — Alexander Migl (CC BY-SA 4.0); Ônibus — MCTI (CC BY 2.0); Ambulância — André Gustavo Stumpf (CC BY 2.0); Fiat Doblò — Alexander-93 (CC BY-SA 4.0); via Wikimedia Commons. Brasão do CMBEL: domínio público. Fotos enviadas pelo administrador pertencem ao CMBEL.</p><div class="acoes"><span></span><button onclick="dlg.close()">OK</button></div>`;
+  $('#dlg').innerHTML = `<h1>Feito por Zampiva</h1><p>Aplicativo de viaturas do Colégio Militar de Belém, criado por Zampiva.</p><p style="font-size:12px;color:var(--fraco)">Fotos de exemplo: VW 15.210 — André Gustavo Stumpf (CC BY 2.0); Chevrolet Spin — オーバードライブ83 (CC BY-SA 4.0); Nissan Versa — Alexander Migl (CC BY-SA 4.0); Ônibus — MCTI (CC BY 2.0); Ambulância — André Gustavo Stumpf (CC BY 2.0); Fiat Doblò — Alexander-93 (CC BY-SA 4.0); via Wikimedia Commons. Brasão do CMBEL: domínio público. Fotos enviadas pelo administrador pertencem ao CMBEL.</p><div class="acoes"><span></span><button onclick="dlg.close()">OK</button></div>`;
   $('#dlg').showModal();
 }
 
@@ -346,7 +357,8 @@ function etapa() {
   <button onclick="avancar()" ${n === 0 && !r.viatura ? 'disabled' : ''}>${n === 4 ? 'Confirmar pedido' : 'Continuar'}</button></div></div>`;
   app.querySelectorAll('input,textarea').forEach((el) => { el.oninput = () => { $('#e').textContent = ''; };
     el.onkeydown = (ev) => { if (ev.key === 'Enter' && (el.tagName === 'INPUT' || ev.ctrlKey)) { ev.preventDefault(); avancar(); } }; });
-  if (r.etapaVista !== n) { r.etapaVista = n; scrollTo(0, 0); anima(); app.querySelector('input,textarea')?.focus(); }
+  if (r.etapaVista !== n) { anima(r.etapaVista == null ? 'entra' : n > r.etapaVista ? 'passo' : 'passoV');
+    r.etapaVista = n; scrollTo(0, 0); app.querySelector('input,textarea')?.focus({ preventScroll: true }); }
 }
 // Etapa "Quando": cartões de dia + botões de horário. Bloqueia antes de 48h e horários já reservados.
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], H = 36e5;
@@ -399,6 +411,9 @@ async function avancar() {
     await telaGaragem(); avisar('Missão registrada.'); } catch (err) { e.textContent = err.message; }
 }
 const dlg = $('#dlg');
+{ const fechar = dlg.close.bind(dlg), abrir = dlg.showModal.bind(dlg); let t;
+  dlg.close = () => { if (!dlg.open) return; dlg.classList.add('sai'); clearTimeout(t); t = setTimeout(() => { dlg.classList.remove('sai'); fechar(); }, 160); };
+  dlg.showModal = () => { clearTimeout(t); dlg.classList.remove('sai'); if (!dlg.open) abrir(); }; }
 if (credAdmin) entrarAdmin(credAdmin).catch(sairAdmin); else iniciar();
 </script>
 </body>
