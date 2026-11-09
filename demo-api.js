@@ -13,15 +13,18 @@
         '100000002': { senha: 'demo-123456', nome: 'SANTOS', posto: '2º Sgt', completo: 'Exemplo Santos', secao: 'Corpo de Alunos' },
       },
       pedidos: [
-        { id: 1, viatura: '5ton', identidade: '100000002', inicio: +agora - H, fim: +agora + 3 * H, destino: 'Depósito da 8ª RM', missao: 'Transporte de material escolar' },
-        { id: 2, viatura: 'spin', identidade: '100000001', inicio: d(3, 8), fim: d(3, 12), destino: 'Aeroporto de Belém', missao: 'Buscar palestrante' },
-        { id: 3, viatura: 'spin', identidade: '100000002', inicio: d(3, 14), fim: d(3, 17), destino: 'Base Naval de Val-de-Cães', missao: 'Visita com alunos' },
+        { id: 1, viatura: 'ambulancia', identidade: '100000002', inicio: +agora - H, fim: +agora + 3 * H, destino: 'Depósito da 8ª RM', missao: 'Transporte de material escolar' },
+        { id: 2, viatura: 'onibus', identidade: '100000001', inicio: d(3, 8), fim: d(3, 12), destino: 'Aeroporto de Belém', missao: 'Buscar palestrante' },
+        { id: 3, viatura: 'onibus', identidade: '100000002', inicio: d(3, 14), fim: d(3, 17), destino: 'Base Naval de Val-de-Cães', missao: 'Visita com alunos' },
       ],
       seq: 4, sessao: null,
+      viaturas: [['onibus', 'Ônibus', 'onibus', 1], ['ambulancia', 'Ambulância', 'ambulancia', 1], ['doblo', 'Fiat Doblò', 'doblo', 1], ['cmt', 'Viatura do Cmt', 'sedan', 1],
+        ['5ton', 'Caminhão 5 Ton', 'caminhao', 0], ['spin', 'Chevrolet Spin', 'van', 0], ['versa', 'Nissan Versa', 'sedan', 0]]
+        .map(([id, nome, tipo, disponivel]) => ({ id, nome, tipo, placa: '', disponivel, motivo: disponivel ? null : 'Aguardando informação da Fiscalização' })),
     };
   }
   const salvar = () => { try { localStorage.setItem(K, JSON.stringify(db)); } catch {} };
-  const VIATURAS = [{ id: '5ton', nome: 'Caminhão 5 Ton', tipo: 'caminhao' }, { id: 'spin', nome: 'Chevrolet Spin', tipo: 'van' }, { id: 'versa', nome: 'Nissan Versa', tipo: 'sedan' }];
+  if (!db.viaturas) { localStorage.removeItem(K); location.reload(); } // demo antiga salva no aparelho
   const normId = (v) => { const x = String(v || '').replace(/[\s.\-/]/g, ''); return /^\d{6,12}$/.test(x) ? x : null; };
   const comp = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
   const fraca = (s) => (s.length < 6 ? 'A nova senha precisa ter pelo menos 6 caracteres.'
@@ -62,9 +65,24 @@
       return [200, {}];
     }
     if (u.trocar) return [403, { erro: 'Troque a senha primeiro.' }];
-    if (r === 'GET /api/frota') return [200, { viaturas: VIATURAS, pedidos: db.pedidos.filter((p) => p.fim > Date.now() - 24 * H).sort((a, c) => a.inicio - c.inicio).map(com), agora: Date.now() }];
+    if (r.startsWith('POST /api/fiscal/')) {
+      if (b.senha_fiscal !== 'fiscal2026') return [401, { erro: 'Senha da Fiscalização incorreta.' }];
+      if (r === 'POST /api/fiscal/viatura') {
+        const nome = String(b.nome || '').trim(), disp = b.disponivel ? 1 : 0, motivo = String(b.motivo || '').trim();
+        if (!nome) return [400, { erro: 'Informe nome e tipo da viatura.' }];
+        if (!disp && !motivo) return [400, { erro: 'Informe o motivo da indisponibilidade.' }];
+        const v = { id: b.id || `vt${Date.now().toString(36)}`, nome, tipo: b.tipo, placa: String(b.placa || '').trim(), disponivel: disp, motivo: disp ? null : motivo };
+        const i = db.viaturas.findIndex((x) => x.id === v.id); i >= 0 ? (db.viaturas[i] = v) : db.viaturas.push(v);
+      }
+      if (r === 'POST /api/fiscal/remover') { db.viaturas = db.viaturas.filter((v) => v.id !== b.id); db.pedidos = db.pedidos.filter((p) => p.viatura !== b.id); }
+      return [200, {}];
+    }
+    if (r === 'GET /api/frota') return [200, { viaturas: db.viaturas, pedidos: db.pedidos.filter((p) => p.fim > Date.now() - 24 * H).sort((a, c) => a.inicio - c.inicio).map(com), agora: Date.now() }];
     if (r === 'POST /api/pedido') {
       const p = { viatura: b.viatura, inicio: +b.inicio, fim: +b.fim, destino: String(b.destino || '').trim(), missao: String(b.missao || '').trim() };
+      const vt = db.viaturas.find((v) => v.id === p.viatura);
+      if (!vt) return [400, { erro: 'Viatura inválida.' }];
+      if (!vt.disponivel) return [409, { erro: `Viatura indisponível: ${vt.motivo}.` }];
       if (!p.destino || !p.missao) return [400, { erro: 'Informe destino e missão.' }];
       if (!(p.fim > p.inicio)) return [409, { erro: 'A volta precisa ser depois da saída.' }];
       if (p.inicio - Date.now() < 48 * H) return [409, { erro: 'O pedido precisa de 48 horas de antecedência.' }];

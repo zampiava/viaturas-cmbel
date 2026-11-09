@@ -16,6 +16,9 @@ button.sec{background:transparent;color:var(--txt);border:1px solid var(--borda)
 .erro{color:var(--verm);min-height:20px}.garagem{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
 .vt{background:var(--painel);border:2px solid var(--borda);border-radius:14px;padding:14px;cursor:pointer;transition:.15s;text-align:left;color:var(--txt);font-weight:400;width:100%}
 .vt:hover,.vt.sel{border-color:var(--ouro);transform:translateY(-3px);box-shadow:0 8px 24px #0008}
+.vt.off .foto{filter:grayscale(1) brightness(.6)}.vt.off{opacity:.85}
+.fiscal{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.fiscal .todo{grid-column:1/-1}
+.chave{display:flex;align-items:center;gap:8px;margin:6px 0 12px}.chave input{width:auto;margin:0}
 .foto{width:100%;height:150px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;filter:saturate(.9)}
 .marca{display:flex;align-items:center;gap:10px}.marca img{height:40px}.marca small{display:block;color:var(--fraco);font-size:11px;letter-spacing:1px}
 footer{text-align:center;color:var(--fraco);font-size:11px;padding:20px 16px}footer a{color:var(--fraco)}
@@ -38,11 +41,11 @@ dialog{background:var(--painel);color:var(--txt);border:1px solid var(--ouro);bo
 .hora:disabled{text-decoration:line-through;opacity:.3}
 </style>
 </head>
-<body><div style="background:#d4b24c;color:#14110a;text-align:center;padding:6px;font-size:13px;font-weight:700">DEMONSTRAÇÃO · os pedidos ficam salvos só neste aparelho · senha de primeiro acesso: 123</div>
+<body><div style="background:#d4b24c;color:#14110a;text-align:center;padding:6px;font-size:13px;font-weight:700">DEMONSTRAÇÃO · os pedidos ficam salvos só neste aparelho · senha de primeiro acesso: 123 · Fiscalização: fiscal2026</div>
 <header><div class="marca"><img src="img/brasao.png" alt="Brasão do CMBEL"><div><b>VIATURAS CMBEL</b><small>COLÉGIO MILITAR DE BELÉM</small></div></div><span id="quem"></span></header>
 <main id="app"></main>
 <dialog id="dlg"></dialog>
-<footer>Fotos: VW 15.210 — André Gustavo Stumpf (CC BY 2.0); Chevrolet Spin — オーバードライブ83 (CC BY-SA 4.0); Nissan Versa — Alexander Migl (CC BY-SA 4.0); via Wikimedia Commons. Brasão do CMBEL: domínio público.</footer>
+<footer>Fotos: VW 15.210 — André Gustavo Stumpf (CC BY 2.0); Chevrolet Spin — オーバードライブ83 (CC BY-SA 4.0); Nissan Versa — Alexander Migl (CC BY-SA 4.0); Ônibus — MCTI (CC BY 2.0); Ambulância — André Gustavo Stumpf (CC BY 2.0); Fiat Doblò — Alexander-93 (CC BY-SA 4.0); via Wikimedia Commons. Brasão do CMBEL: domínio público.</footer>
 <script src="demo-api.js"></script><script>
 const $ = (s) => document.querySelector(s), app = $('#app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -51,13 +54,15 @@ const api = async (url, body) => {
   const j = await r.json(); if (!r.ok) throw Object.assign(new Error(j.erro), { status: r.status }); return j;
 };
 const fmt = (ms) => new Date(ms).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-const ICONES = { caminhao: '<img class="foto" src="img/5ton.jpg" alt="Caminhão 5 Ton">', van: '<img class="foto" src="img/spin.jpg" alt="Chevrolet Spin">', sedan: '<img class="foto" src="img/versa.jpg" alt="Nissan Versa">' };
+const TIPOS = { onibus: ['Ônibus', 'onibus.jpg'], ambulancia: ['Ambulância', 'ambulancia.jpg'], doblo: ['Doblò / utilitário', 'doblo.jpg'],
+  caminhao: ['Caminhão', '5ton.jpg'], van: ['Mini-van (Spin)', 'spin.jpg'], sedan: ['Sedã', 'versa.jpg'] };
+const ICONES = new Proxy({}, { get: (_, t) => `<img class="foto" src="img/${(TIPOS[t] || TIPOS.sedan)[1]}" alt="">` });
 let eu, frota, rascunho;
 
 async function iniciar() {
   try { eu = await api('/api/eu'); } catch { return telaLogin(); }
   $('#quem').innerHTML = `${esc(eu.posto)} ${esc(eu.nome)} <button class="sec" onclick="sair()">Sair</button>`;
-  eu.trocarSenha ? telaPerfil() : telaGaragem();
+  return eu.trocarSenha ? telaPerfil() : telaGaragem();
 }
 async function sair() { await api('/api/sair', {}); location.reload(); }
 
@@ -99,8 +104,38 @@ function telaPerfil() {
     'Salvar e continuar', async (d) => { await api('/api/perfil', d); iniciar(); }, link('Sair', 'sair()'));
 }
 
+// Área da Fiscalização: senha própria a cada entrada (como Furriel/Aprovisionamento no Rancho).
+let senhaFiscal = '';
+function telaFiscal() {
+  if (!senhaFiscal) return formulario('Área da Fiscalização', 'Acesso restrito', `<label>Senha da Fiscalização</label><input name="senha_fiscal" type="password" required>`,
+    'Entrar', async (d) => { await api('/api/fiscal/entrar', d); senhaFiscal = d.senha_fiscal; iniciar().then(telaFiscal); }, link('◀ Voltar', 'iniciar()'));
+  const tipos = (t) => Object.entries(TIPOS).map(([k, [n]]) => `<option value="${k}" ${k === t ? 'selected' : ''}>${n}</option>`).join('');
+  const ficha = (v = { tipo: 'sedan', disponivel: 1 }) => `<form class="card fiscal" onsubmit="salvarVt(event,'${v.id || ''}')">
+    <div class="todo">${v.id ? `<b>${esc(v.nome)}</b>` : '<h2>Adicionar viatura</h2>'}</div>
+    <div><label>Nome</label><input name="nome" value="${esc(v.nome || '')}" placeholder="Ex.: Ambulância 2" required></div>
+    <div><label>Tipo (foto)</label><select name="tipo">${tipos(v.tipo)}</select></div>
+    <div><label>Placa / EB</label><input name="placa" value="${esc(v.placa || '')}"></div>
+    <label class="chave"><input type="checkbox" name="disponivel" ${v.disponivel ? 'checked' : ''} onchange="this.form.motivo.required=!this.checked"> Disponível para pedidos</label>
+    <div class="todo"><label>Motivo da indisponibilidade</label><input name="motivo" value="${esc(v.motivo || '')}" placeholder="Ex.: Em manutenção — troca de pneus" ${v.disponivel ? '' : 'required'}></div>
+    <div class="todo acoes">${v.id ? `<button type="button" class="sec" onclick="removerVt('${v.id}')">Remover</button>` : '<span></span>'}<button>${v.id ? 'Salvar' : '+ Adicionar'}</button></div></form>`;
+  app.innerHTML = `<h2>Área da Fiscalização</h2><h1>Situação da frota</h1>
+    <p style="color:var(--fraco)">Desmarque "Disponível" e informe o motivo para bloquear os pedidos daquela viatura.</p>
+    ${frota.viaturas.map(ficha).join('')}${ficha()}
+    <div class="acoes"><button class="sec" onclick="senhaFiscal='';telaGaragem()">◀ Sair da Fiscalização</button></div>`;
+}
+async function salvarVt(ev, id) {
+  ev.preventDefault(); const f = ev.target, d = Object.fromEntries(new FormData(f));
+  try { await api('/api/fiscal/viatura', { ...d, id, disponivel: f.disponivel.checked, senha_fiscal: senhaFiscal });
+    frota = await api('/api/frota'); telaFiscal(); } catch (e) { alert(e.message); }
+}
+async function removerVt(id) {
+  if (!confirm('Remover esta viatura e todos os pedidos dela?')) return;
+  await api('/api/fiscal/remover', { id, senha_fiscal: senhaFiscal }); frota = await api('/api/frota'); telaFiscal();
+}
+
 function status(v) {
   const ag = frota.agora, ps = frota.pedidos.filter((p) => p.viatura === v.id);
+  if (!v.disponivel) return { cls: 'missao', txt: `Indisponível · ${v.motivo || ''}`, ps };
   const atual = ps.find((p) => p.inicio <= ag && p.fim > ag);
   if (atual) return { cls: 'missao', txt: `Em missão · ${atual.posto} ${atual.nome}`, ps };
   const prox = ps.find((p) => p.inicio > ag);
@@ -110,13 +145,14 @@ function status(v) {
 async function telaGaragem() {
   frota = await api('/api/frota');
   app.innerHTML = `<h2>Garagem</h2><h1>Frota do Colégio Militar de Belém</h1>
-  <div class="garagem">${frota.viaturas.map((v) => { const s = status(v);
-    return `<button class="vt" onclick="detalhe('${v.id}')">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div>
+  <div class="garagem">${[...frota.viaturas].sort((a, b) => b.disponivel - a.disponivel).map((v) => { const s = status(v);
+    return `<button class="vt ${v.disponivel ? '' : 'off'}" onclick="detalhe('${v.id}')">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div>
     <div class="st ${s.cls}"><i></i>${esc(s.txt)}</div></button>`; }).join('')}</div>
   <div style="text-align:center;margin:22px 0"><button onclick="novaMissao()" style="font-size:17px;padding:16px 30px">▶ Nova missão</button></div>
   <div class="card"><h2>Minhas missões</h2>${frota.pedidos.filter((p) => p.identidade === eu.identidade && p.fim > frota.agora).map((p) =>
     `<div class="ped">${esc(nomeVt(p.viatura))} → <b>${esc(p.destino)}</b><br><small>${fmt(p.inicio)} até ${fmt(p.fim)} · ${esc(p.missao)}</small>
-    <br><button class="sec" style="padding:6px 10px;margin-top:6px" onclick="cancelar(${p.id})">Cancelar</button></div>`).join('') || '<small style="color:var(--fraco)">Nenhuma missão agendada.</small>'}</div>`;
+    <br><button class="sec" style="padding:6px 10px;margin-top:6px" onclick="cancelar(${p.id})">Cancelar</button></div>`).join('') || '<small style="color:var(--fraco)">Nenhuma missão agendada.</small>'}</div>
+  <div style="text-align:center"><button class="sec" onclick="telaFiscal()">⚙ Área da Fiscalização</button></div>`;
 }
 const nomeVt = (id) => frota.viaturas.find((v) => v.id === id)?.nome;
 
@@ -126,7 +162,7 @@ function detalhe(id) {
   $('#dlg').innerHTML = `${ICONES[v.tipo]}<h1 style="margin:6px 0">${esc(v.nome)}</h1><div class="st ${s.cls}"><i></i>${esc(s.txt)}</div>
   <h2 style="margin-top:16px">Agenda</h2>${lista.map((p) => `<div class="ped ${p.inicio <= frota.agora ? 'agora' : ''}">
   <b>${esc(p.posto)} ${esc(p.nome)}</b> → ${esc(p.destino)}<br><small>${fmt(p.inicio)} até ${fmt(p.fim)}<br>Missão: ${esc(p.missao)}</small></div>`).join('') || '<small style="color:var(--fraco)">Sem reservas.</small>'}
-  <div class="acoes"><button class="sec" onclick="dlg.close()">Fechar</button><button onclick="dlg.close();novaMissao('${id}')">Pedir esta viatura</button></div>`;
+  <div class="acoes"><button class="sec" onclick="dlg.close()">Fechar</button>${v.disponivel ? `<button onclick="dlg.close();novaMissao('${id}')">Pedir esta viatura</button>` : ''}</div>`;
   $('#dlg').showModal();
 }
 
@@ -134,11 +170,11 @@ async function cancelar(id) { if (confirm('Cancelar esta missão?')) { await api
 
 // Wizard em etapas: Viatura → Quando → Onde → Missão → Confirmar
 const ETAPAS = ['Viatura', 'Quando', 'Onde', 'Missão', 'Confirmar'];
-function novaMissao(vt) { rascunho = { viatura: vt || '', etapa: vt ? 1 : 0 }; etapa(); }
+function novaMissao(vt) { if (vt && !frota.viaturas.find((v) => v.id === vt)?.disponivel) vt = ''; rascunho = { viatura: vt || '', etapa: vt ? 1 : 0 }; etapa(); }
 function etapa() {
   const r = rascunho, n = r.etapa;
   const corpo = [
-    () => `<h1>Qual viatura?</h1><div class="garagem">${frota.viaturas.map((v) => `<button class="vt ${r.viatura === v.id ? 'sel' : ''}" onclick="rascunho.viatura='${v.id}';etapa()">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div></button>`).join('')}</div>`,
+    () => `<h1>Qual viatura?</h1><div class="garagem">${frota.viaturas.filter((v) => v.disponivel).map((v) => `<button class="vt ${r.viatura === v.id ? 'sel' : ''}" onclick="rascunho.viatura='${v.id}';etapa()">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div></button>`).join('')}</div>`,
     () => telaQuando(r),
     () => `<h1>Para onde?</h1><label>Destino</label><input id="destino" placeholder="Ex.: 8ª RM, Aeroporto, Base Naval" value="${esc(r.destino || '')}">`,
     () => `<h1>Qual a missão?</h1><label>Descrição</label><textarea id="missao" rows="4" placeholder="Ex.: Transporte de material escolar">${esc(r.missao || '')}</textarea>`,

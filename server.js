@@ -19,9 +19,16 @@ CREATE TABLE IF NOT EXISTS sessoes (token TEXT PRIMARY KEY, identidade TEXT, cri
 CREATE TABLE IF NOT EXISTS viaturas (id TEXT PRIMARY KEY, nome TEXT, tipo TEXT, placa TEXT);
 CREATE TABLE IF NOT EXISTS pedidos (id INTEGER PRIMARY KEY AUTOINCREMENT, viatura TEXT, identidade TEXT,
   inicio INTEGER, fim INTEGER, destino TEXT, missao TEXT, criado INTEGER);
-INSERT OR IGNORE INTO viaturas VALUES
-  ('5ton','Caminhão 5 Ton','caminhao',''),('spin','Chevrolet Spin','van',''),('versa','Nissan Versa','sedan','');
 `);
+
+try { db.exec('ALTER TABLE viaturas ADD COLUMN disponivel INTEGER DEFAULT 1'); db.exec('ALTER TABLE viaturas ADD COLUMN motivo TEXT'); } catch {}
+// Frota inicial (a Fiscalização ajusta pela Área do Fiscal).
+const AGUARDANDO = 'Aguardando informação da Fiscalização';
+for (const [id, nome, tipo, disp] of [['onibus', 'Ônibus', 'onibus', 1], ['ambulancia', 'Ambulância', 'ambulancia', 1], ['doblo', 'Fiat Doblò', 'doblo', 1],
+  ['cmt', 'Viatura do Cmt', 'sedan', 1], ['5ton', 'Caminhão 5 Ton', 'caminhao', 0], ['spin', 'Chevrolet Spin', 'van', 0], ['versa', 'Nissan Versa', 'sedan', 0]])
+  db.prepare('INSERT OR IGNORE INTO viaturas (id, nome, tipo, placa, disponivel, motivo) VALUES (?,?,?,?,?,?)').run(id, nome, tipo, '', disp, disp ? null : AGUARDANDO);
+const TIPOS = ['onibus', 'ambulancia', 'doblo', 'caminhao', 'van', 'sedan'];
+const FISCAL_SENHA = process.env.FISCAL_SENHA || 'fiscal2026';
 
 for (const col of ['completo', 'secao']) try { db.exec(`ALTER TABLE usuarios ADD COLUMN ${col} TEXT`); } catch {}
 
@@ -116,6 +123,25 @@ async function api(req, res, rota) {
   }
   if (u.trocar_senha) return json(403, { erro: 'Troque a senha primeiro.' });
 
+  if (rota.startsWith('POST /api/fiscal/')) {
+    if (String(body.senha_fiscal || '') !== FISCAL_SENHA) return json(401, { erro: 'Senha da Fiscalização incorreta.' });
+    if (rota === 'POST /api/fiscal/entrar') return json(200, {});
+    if (rota === 'POST /api/fiscal/viatura') {
+      const nome = String(body.nome || '').trim().slice(0, 60), tipo = String(body.tipo), disp = body.disponivel ? 1 : 0, motivo = String(body.motivo || '').trim().slice(0, 200);
+      if (!nome || !TIPOS.includes(tipo)) return json(400, { erro: 'Informe nome e tipo da viatura.' });
+      if (!disp && !motivo) return json(400, { erro: 'Informe o motivo da indisponibilidade.' });
+      const id = body.id || `vt${Date.now().toString(36)}`;
+      db.prepare(`INSERT INTO viaturas (id, nome, tipo, placa, disponivel, motivo) VALUES (?,?,?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET nome=excluded.nome, tipo=excluded.tipo, placa=excluded.placa, disponivel=excluded.disponivel, motivo=excluded.motivo`)
+        .run(id, nome, tipo, String(body.placa || '').trim().slice(0, 10), disp, disp ? null : motivo);
+      return json(200, {});
+    }
+    if (rota === 'POST /api/fiscal/remover') {
+      db.prepare('DELETE FROM pedidos WHERE viatura=?').run(String(body.id));
+      db.prepare('DELETE FROM viaturas WHERE id=?').run(String(body.id));
+      return json(200, {});
+    }
+  }
   if (rota === 'GET /api/frota') {
     const pedidos = db.prepare(`SELECT p.*, u.nome, u.posto FROM pedidos p JOIN usuarios u USING(identidade)
       WHERE fim > ? ORDER BY inicio`).all(Date.now() - 86400000);
@@ -124,7 +150,9 @@ async function api(req, res, rota) {
   if (rota === 'POST /api/pedido') {
     const p = { viatura: String(body.viatura), inicio: Number(body.inicio), fim: Number(body.fim),
       destino: String(body.destino || '').trim().slice(0, 200), missao: String(body.missao || '').trim().slice(0, 500) };
-    if (!db.prepare('SELECT 1 FROM viaturas WHERE id=?').get(p.viatura)) return json(400, { erro: 'Viatura inválida.' });
+    const vt = db.prepare('SELECT * FROM viaturas WHERE id=?').get(p.viatura);
+    if (!vt) return json(400, { erro: 'Viatura inválida.' });
+    if (!vt.disponivel) return json(409, { erro: `Viatura indisponível: ${vt.motivo || 'sem motivo informado'}.` });
     if (!p.destino || !p.missao) return json(400, { erro: 'Informe destino e missão.' });
     const existentes = db.prepare('SELECT p.*, u.nome, u.posto FROM pedidos p JOIN usuarios u USING(identidade) WHERE viatura=?').all(p.viatura);
     const erro = validarPedido(p, Date.now(), existentes);
