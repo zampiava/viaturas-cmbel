@@ -28,7 +28,9 @@ for (const [id, nome, tipo, disp] of [['onibus', 'Ônibus', 'onibus', 1], ['ambu
   ['cmt', 'Viatura do Cmt', 'sedan', 1], ['5ton', 'Caminhão 5 Ton', 'caminhao', 0], ['spin', 'Chevrolet Spin', 'van', 0], ['versa', 'Nissan Versa', 'sedan', 0]])
   db.prepare('INSERT OR IGNORE INTO viaturas (id, nome, tipo, placa, disponivel, motivo) VALUES (?,?,?,?,?,?)').run(id, nome, tipo, '', disp, disp ? null : AGUARDANDO);
 const TIPOS = ['onibus', 'ambulancia', 'doblo', 'caminhao', 'van', 'sedan'];
-const FISCAL_SENHA = process.env.FISCAL_SENHA || 'fiscal2026';
+const FISCAL_USUARIO = (process.env.FISCAL_USUARIO || 'FISCAL2026').toUpperCase();
+const FISCAL_SENHA = process.env.FISCAL_SENHA || '2026';
+let fiscalFalhas = 0, fiscalBloqueio = 0; // ponytail: bloqueio único em memória (zera ao reiniciar)
 
 for (const col of ['completo', 'secao']) try { db.exec(`ALTER TABLE usuarios ADD COLUMN ${col} TEXT`); } catch {}
 
@@ -107,25 +109,14 @@ async function api(req, res, rota) {
     return json(200, publico(u), { 'Set-Cookie': `vt=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000` });
   }
 
-  const u = usuarioDa(req);
-  if (!u) return json(401, { erro: 'Faça login.' });
-
-  if (rota === 'GET /api/eu') return json(200, publico(u));
-  if (rota === 'POST /api/sair') { db.prepare('DELETE FROM sessoes WHERE identidade=?').run(u.identidade); return json(200, {}); }
-  if (rota === 'POST /api/perfil') {
-    const s = String(body.senha || ''), d = Object.fromEntries(['completo', 'nome', 'posto', 'secao'].map((k) => [k, String(body[k] || '').trim()]));
-    const fraca = senhaFraca(s);
-    if (fraca) return json(400, { erro: fraca });
-    if (Object.values(d).some((v) => !v)) return json(400, { erro: 'Preencha todos os campos.' });
-    db.prepare('UPDATE usuarios SET senha=?, completo=?, nome=?, posto=?, secao=?, trocar_senha=0 WHERE identidade=?')
-      .run(hash(s), d.completo, d.nome.toUpperCase(), d.posto, d.secao, u.identidade);
-    return json(200, {});
-  }
-  if (u.trocar_senha) return json(403, { erro: 'Troque a senha primeiro.' });
-
   if (rota.startsWith('POST /api/fiscal/')) {
-    if (String(body.senha_fiscal || '') !== FISCAL_SENHA) return json(401, { erro: 'Senha da Fiscalização incorreta.' });
-    if (rota === 'POST /api/fiscal/entrar') return json(200, {});
+    if (fiscalBloqueio > Date.now()) return json(429, { erro: 'Muitas tentativas erradas. Tente de novo em 15 minutos.' });
+    if (String(body.usuario_fiscal || '').trim().toUpperCase() !== FISCAL_USUARIO || String(body.senha_fiscal || '') !== FISCAL_SENHA) {
+      if (++fiscalFalhas >= 5) { fiscalFalhas = 0; fiscalBloqueio = Date.now() + 15 * 60000; }
+      return json(401, { erro: 'Usuário ou senha da Fiscalização incorretos.' });
+    }
+    fiscalFalhas = 0;
+    if (rota === 'POST /api/fiscal/entrar') return json(200, { viaturas: db.prepare('SELECT * FROM viaturas').all() });
     if (rota === 'POST /api/fiscal/viatura') {
       const nome = String(body.nome || '').trim().slice(0, 60), tipo = String(body.tipo), disp = body.disponivel ? 1 : 0, motivo = String(body.motivo || '').trim().slice(0, 200);
       if (!nome || !TIPOS.includes(tipo)) return json(400, { erro: 'Informe nome e tipo da viatura.' });
@@ -142,6 +133,22 @@ async function api(req, res, rota) {
       return json(200, {});
     }
   }
+  const u = usuarioDa(req);
+  if (!u) return json(401, { erro: 'Faça login.' });
+
+  if (rota === 'GET /api/eu') return json(200, publico(u));
+  if (rota === 'POST /api/sair') { db.prepare('DELETE FROM sessoes WHERE identidade=?').run(u.identidade); return json(200, {}); }
+  if (rota === 'POST /api/perfil') {
+    const s = String(body.senha || ''), d = Object.fromEntries(['completo', 'nome', 'posto', 'secao'].map((k) => [k, String(body[k] || '').trim()]));
+    const fraca = senhaFraca(s);
+    if (fraca) return json(400, { erro: fraca });
+    if (Object.values(d).some((v) => !v)) return json(400, { erro: 'Preencha todos os campos.' });
+    db.prepare('UPDATE usuarios SET senha=?, completo=?, nome=?, posto=?, secao=?, trocar_senha=0 WHERE identidade=?')
+      .run(hash(s), d.completo, d.nome.toUpperCase(), d.posto, d.secao, u.identidade);
+    return json(200, {});
+  }
+  if (u.trocar_senha) return json(403, { erro: 'Troque a senha primeiro.' });
+
   if (rota === 'GET /api/frota') {
     const pedidos = db.prepare(`SELECT p.*, u.nome, u.posto FROM pedidos p JOIN usuarios u USING(identidade)
       WHERE fim > ? ORDER BY inicio`).all(Date.now() - 86400000);

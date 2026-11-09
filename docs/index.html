@@ -41,7 +41,7 @@ dialog{background:var(--painel);color:var(--txt);border:1px solid var(--ouro);bo
 .hora:disabled{text-decoration:line-through;opacity:.3}
 </style>
 </head>
-<body><div style="background:#d4b24c;color:#14110a;text-align:center;padding:6px;font-size:13px;font-weight:700">DEMONSTRAÇÃO · os pedidos ficam salvos só neste aparelho · senha de primeiro acesso: 123 · Fiscalização: fiscal2026</div>
+<body><div style="background:#d4b24c;color:#14110a;text-align:center;padding:6px;font-size:13px;font-weight:700">DEMONSTRAÇÃO · os pedidos ficam salvos só neste aparelho · senha de primeiro acesso: 123 · Fiscalização: FISCAL2026 / 2026</div>
 <header><div class="marca"><img src="img/brasao.png" alt="Brasão do CMBEL"><div><b>VIATURAS CMBEL</b><small>COLÉGIO MILITAR DE BELÉM</small></div></div><span id="quem"></span></header>
 <main id="app"></main>
 <dialog id="dlg"></dialog>
@@ -84,7 +84,7 @@ function telaLogin(aviso = '') {
     <label>Senha</label><input name="senha" type="password" autocomplete="current-password" required>
     ${aviso ? `<p style="color:var(--verde)">${esc(aviso)}</p>` : ''}`, 'Entrar',
     async (d) => { await api('/api/login', d); iniciar(); },
-    link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()'));
+    link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()') + link('⚙ Área da Fiscalização', 'telaFiscal()'));
 }
 function telaCriar() {
   formulario('Criar conta', 'Primeiro acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" required>
@@ -105,10 +105,12 @@ function telaPerfil() {
 }
 
 // Área da Fiscalização: senha própria a cada entrada (como Furriel/Aprovisionamento no Rancho).
-let senhaFiscal = '';
+let credFiscal = null;
 function telaFiscal() {
-  if (!senhaFiscal) return formulario('Área da Fiscalização', 'Acesso restrito', `<label>Senha da Fiscalização</label><input name="senha_fiscal" type="password" required>`,
-    'Entrar', async (d) => { await api('/api/fiscal/entrar', d); senhaFiscal = d.senha_fiscal; iniciar().then(telaFiscal); }, link('◀ Voltar', 'iniciar()'));
+  if (!credFiscal) return formulario('Área da Fiscalização', 'Acesso restrito', `<label>Usuário</label><input name="usuario_fiscal" autocapitalize="characters" autocomplete="username" required>
+    <label>Senha</label><input name="senha_fiscal" type="password" autocomplete="current-password" required>`,
+    'Entrar', async (d) => { frota = { ...(await api('/api/fiscal/entrar', d)), pedidos: [] }; credFiscal = d; telaFiscal(); }, link('◀ Voltar', 'iniciar()'));
+  $('#quem').innerHTML = '<b style="color:var(--ouro)">FISCALIZAÇÃO</b>';
   const tipos = (t) => Object.entries(TIPOS).map(([k, [n]]) => `<option value="${k}" ${k === t ? 'selected' : ''}>${n}</option>`).join('');
   const ficha = (v = { tipo: 'sedan', disponivel: 1 }) => `<form class="card fiscal" onsubmit="salvarVt(event,'${v.id || ''}')">
     <div class="todo">${v.id ? `<b>${esc(v.nome)}</b>` : '<h2>Adicionar viatura</h2>'}</div>
@@ -121,16 +123,17 @@ function telaFiscal() {
   app.innerHTML = `<h2>Área da Fiscalização</h2><h1>Situação da frota</h1>
     <p style="color:var(--fraco)">Desmarque "Disponível" e informe o motivo para bloquear os pedidos daquela viatura.</p>
     ${frota.viaturas.map(ficha).join('')}${ficha()}
-    <div class="acoes"><button class="sec" onclick="senhaFiscal='';telaGaragem()">◀ Sair da Fiscalização</button></div>`;
+    <div class="acoes"><button class="sec" onclick="credFiscal=null;iniciar()">◀ Sair da Fiscalização</button></div>`;
 }
 async function salvarVt(ev, id) {
   ev.preventDefault(); const f = ev.target, d = Object.fromEntries(new FormData(f));
-  try { await api('/api/fiscal/viatura', { ...d, id, disponivel: f.disponivel.checked, senha_fiscal: senhaFiscal });
-    frota = await api('/api/frota'); telaFiscal(); } catch (e) { alert(e.message); }
+  try { await api('/api/fiscal/viatura', { ...d, id, disponivel: f.disponivel.checked, ...credFiscal }); await recarregarFiscal(); } catch (e) { alert(e.message); }
 }
 async function removerVt(id) {
   if (!confirm('Remover esta viatura e todos os pedidos dela?')) return;
-  await api('/api/fiscal/remover', { id, senha_fiscal: senhaFiscal }); frota = await api('/api/frota'); telaFiscal();
+  await api('/api/fiscal/remover', { id, ...credFiscal }); await recarregarFiscal();
+}
+async function recarregarFiscal() { frota = { ...(await api('/api/fiscal/entrar', credFiscal)), pedidos: [] }; telaFiscal();
 }
 
 function status(v) {

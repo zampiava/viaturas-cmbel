@@ -53,6 +53,19 @@
       const f = fraca(String(b.senha || '')); if (f) return [400, { erro: f }];
       u.senha = b.senha; u.trocar = false; return [200, {}];
     }
+    if (r.startsWith('POST /api/fiscal/')) {
+      if (String(b.usuario_fiscal || '').trim().toUpperCase() !== 'FISCAL2026' || b.senha_fiscal !== '2026') return [401, { erro: 'Usuário ou senha da Fiscalização incorretos.' }];
+      if (r === 'POST /api/fiscal/entrar') return [200, { viaturas: db.viaturas }];
+      if (r === 'POST /api/fiscal/viatura') {
+        const nome = String(b.nome || '').trim(), disp = b.disponivel ? 1 : 0, motivo = String(b.motivo || '').trim();
+        if (!nome) return [400, { erro: 'Informe nome e tipo da viatura.' }];
+        if (!disp && !motivo) return [400, { erro: 'Informe o motivo da indisponibilidade.' }];
+        const v = { id: b.id || `vt${Date.now().toString(36)}`, nome, tipo: b.tipo, placa: String(b.placa || '').trim(), disponivel: disp, motivo: disp ? null : motivo };
+        const i = db.viaturas.findIndex((x) => x.id === v.id); i >= 0 ? (db.viaturas[i] = v) : db.viaturas.push(v);
+      }
+      if (r === 'POST /api/fiscal/remover') { db.viaturas = db.viaturas.filter((v) => v.id !== b.id); db.pedidos = db.pedidos.filter((p) => p.viatura !== b.id); }
+      return [200, {}];
+    }
     const id = db.sessao;
     if (!id || !db.usuarios[id]) return [401, { erro: 'Faça login.' }];
     const u = db.usuarios[id];
@@ -65,18 +78,6 @@
       return [200, {}];
     }
     if (u.trocar) return [403, { erro: 'Troque a senha primeiro.' }];
-    if (r.startsWith('POST /api/fiscal/')) {
-      if (b.senha_fiscal !== 'fiscal2026') return [401, { erro: 'Senha da Fiscalização incorreta.' }];
-      if (r === 'POST /api/fiscal/viatura') {
-        const nome = String(b.nome || '').trim(), disp = b.disponivel ? 1 : 0, motivo = String(b.motivo || '').trim();
-        if (!nome) return [400, { erro: 'Informe nome e tipo da viatura.' }];
-        if (!disp && !motivo) return [400, { erro: 'Informe o motivo da indisponibilidade.' }];
-        const v = { id: b.id || `vt${Date.now().toString(36)}`, nome, tipo: b.tipo, placa: String(b.placa || '').trim(), disponivel: disp, motivo: disp ? null : motivo };
-        const i = db.viaturas.findIndex((x) => x.id === v.id); i >= 0 ? (db.viaturas[i] = v) : db.viaturas.push(v);
-      }
-      if (r === 'POST /api/fiscal/remover') { db.viaturas = db.viaturas.filter((v) => v.id !== b.id); db.pedidos = db.pedidos.filter((p) => p.viatura !== b.id); }
-      return [200, {}];
-    }
     if (r === 'GET /api/frota') return [200, { viaturas: db.viaturas, pedidos: db.pedidos.filter((p) => p.fim > Date.now() - 24 * H).sort((a, c) => a.inicio - c.inicio).map(com), agora: Date.now() }];
     if (r === 'POST /api/pedido') {
       const p = { viatura: b.viatura, inicio: +b.inicio, fim: +b.fim, destino: String(b.destino || '').trim(), missao: String(b.missao || '').trim() };
