@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Viaturas CMBEL</title>
+<style>
+:root{--bg:#0e1410;--painel:#16201a;--borda:#2c3d31;--txt:#e6efe8;--fraco:#93a598;--verde:#4caf6a;--ouro:#d4b24c;--verm:#d9534f;--azul:#5aa0d8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#1b2a20,var(--bg) 70%);color:var(--txt);font:15px/1.4 system-ui,sans-serif;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--borda);background:#0b100dcc}
+header b{letter-spacing:2px;color:var(--ouro)}main{max-width:900px;margin:auto;padding:16px}
+.card{background:var(--painel);border:1px solid var(--borda);border-radius:12px;padding:18px;margin-bottom:14px}
+h2{margin:0 0 4px;font-size:13px;letter-spacing:3px;color:var(--ouro);text-transform:uppercase}h1{margin:0 0 14px;font-size:22px}
+input,textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--borda);background:#0b100d;color:var(--txt);font:inherit;margin:6px 0 12px}
+label{font-size:13px;color:var(--fraco)}button{cursor:pointer;font:inherit;border:0;border-radius:8px;padding:12px 18px;background:var(--verde);color:#08120b;font-weight:700}
+button.sec{background:transparent;color:var(--txt);border:1px solid var(--borda)}button:disabled{opacity:.4;cursor:default}
+.erro{color:var(--verm);min-height:20px}.garagem{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.vt{background:var(--painel);border:2px solid var(--borda);border-radius:14px;padding:14px;cursor:pointer;transition:.15s;text-align:left;color:var(--txt);font-weight:400;width:100%}
+.vt:hover,.vt.sel{border-color:var(--ouro);transform:translateY(-3px);box-shadow:0 8px 24px #0008}
+.foto{width:100%;height:150px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;filter:saturate(.9)}
+.marca{display:flex;align-items:center;gap:10px}.marca img{height:40px}.marca small{display:block;color:var(--fraco);font-size:11px;letter-spacing:1px}
+footer{text-align:center;color:var(--fraco);font-size:11px;padding:20px 16px}footer a{color:var(--fraco)}
+.selo{display:block;height:110px;margin:0 auto 10px}.vt .nome{font-weight:700;font-size:17px}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.st i{width:9px;height:9px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.livre{color:var(--verde)}.missao{color:var(--verm)}.reserv{color:var(--ouro)}
+.barra{display:flex;gap:6px;margin:10px 0 18px}.barra span{flex:1;height:6px;border-radius:3px;background:var(--borda)}.barra span.on{background:var(--ouro)}
+.linha{display:flex;gap:10px;flex-wrap:wrap}.linha>*{flex:1;min-width:130px}
+.ped{border-left:3px solid var(--ouro);padding:8px 12px;margin:8px 0;background:#0b100d;border-radius:0 8px 8px 0}
+.ped small{color:var(--fraco)}.agora{border-color:var(--verm)}.acoes{display:flex;gap:10px;justify-content:space-between;margin-top:8px}
+dialog{background:var(--painel);color:var(--txt);border:1px solid var(--ouro);border-radius:14px;max-width:520px;width:calc(100% - 32px)}dialog::backdrop{background:#000a}
+.dias{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 12px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--borda) transparent}
+.dia{flex:0 0 64px;display:flex;flex-direction:column;align-items:center;padding:8px 0;background:#0b100d;color:var(--txt);border:1px solid var(--borda);font-weight:400;scroll-snap-align:start}
+.dia b{font-size:22px}.dia small{font-size:11px;color:var(--fraco);text-transform:uppercase}
+.horas{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px;padding:6px 0 14px}
+.hora{padding:9px 0;background:#0b100d;color:var(--txt);border:1px solid var(--borda);font-weight:600}
+.dia:not(:disabled):hover,.hora:not(:disabled):hover{border-color:var(--ouro)}
+.dia.sel,.hora.sel{background:var(--ouro);color:#14110a;border-color:var(--ouro)}.dia.sel small{color:#14110a}
+.hora:disabled{text-decoration:line-through;opacity:.3}
+</style>
+</head>
+<body><div style="background:#d4b24c;color:#14110a;text-align:center;padding:6px;font-size:13px;font-weight:700">DEMONSTRAÇÃO · os pedidos ficam salvos só neste aparelho · senha de primeiro acesso: 123</div>
+<header><div class="marca"><img src="img/brasao.png" alt="Brasão do CMBEL"><div><b>VIATURAS CMBEL</b><small>COLÉGIO MILITAR DE BELÉM</small></div></div><span id="quem"></span></header>
+<main id="app"></main>
+<dialog id="dlg"></dialog>
+<footer>Fotos: VW 15.210 — André Gustavo Stumpf (CC BY 2.0); Chevrolet Spin — オーバードライブ83 (CC BY-SA 4.0); Nissan Versa — Alexander Migl (CC BY-SA 4.0); via Wikimedia Commons. Brasão do CMBEL: domínio público.</footer>
+<script src="demo-api.js"></script><script>
+const $ = (s) => document.querySelector(s), app = $('#app');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const api = async (url, body) => {
+  const r = await fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
+  const j = await r.json(); if (!r.ok) throw Object.assign(new Error(j.erro), { status: r.status }); return j;
+};
+const fmt = (ms) => new Date(ms).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const ICONES = { caminhao: '<img class="foto" src="img/5ton.jpg" alt="Caminhão 5 Ton">', van: '<img class="foto" src="img/spin.jpg" alt="Chevrolet Spin">', sedan: '<img class="foto" src="img/versa.jpg" alt="Nissan Versa">' };
+let eu, frota, rascunho;
+
+async function iniciar() {
+  try { eu = await api('/api/eu'); } catch { return telaLogin(); }
+  $('#quem').innerHTML = `${esc(eu.posto)} ${esc(eu.nome)} <button class="sec" onclick="sair()">Sair</button>`;
+  eu.trocarSenha ? telaPerfil() : telaGaragem();
+}
+async function sair() { await api('/api/sair', {}); location.reload(); }
+
+const POSTOS = ['', 'Gen', 'Cel', 'TC', 'Maj', 'Cap', '1º Ten', '2º Ten', 'Asp', 'ST', '1º Sgt', '2º Sgt', '3º Sgt', 'Cb', 'Sd', 'Servidor Civil'];
+const campos = (extra = '') => `<label>Nome completo</label><input name="completo" autocomplete="name" required>
+  <label>Nome de guerra</label><input name="nome" required style="text-transform:uppercase">
+  <label>Posto/Graduação</label><select name="posto" required>${POSTOS.map((p) => `<option>${p}</option>`).join('')}</select>
+  <label>Divisão/Seção</label><input name="secao" placeholder="Ex.: Div Adm, Corpo de Alunos, 1ª Cia" required>${extra}`;
+const link = (txt, fn) => `<button type="button" class="sec" style="width:100%;margin-top:8px" onclick="${fn}">${txt}</button>`;
+function formulario(titulo, sub, corpo, botao, acao, rodape = '') {
+  $('#quem').innerHTML = '';
+  app.innerHTML = `<div class="card" style="max-width:400px;margin:30px auto"><img class="selo" src="img/brasao.png" alt="">
+  <h2>${sub}</h2><h1>${titulo}</h1><form id="f">${corpo}<p class="erro" id="e"></p><button style="width:100%">${botao}</button></form>${rodape}</div>`;
+  $('#f').onsubmit = async (ev) => { ev.preventDefault(); const b = ev.target.querySelector('button:not([type])'); b.disabled = true;
+    try { await acao(Object.fromEntries(new FormData(ev.target))); } catch (e) { $('#e').textContent = e.message; } b.disabled = false; };
+}
+function telaLogin(aviso = '') {
+  formulario('Identifique-se', 'Acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" autocomplete="username" required>
+    <label>Senha</label><input name="senha" type="password" autocomplete="current-password" required>
+    ${aviso ? `<p style="color:var(--verde)">${esc(aviso)}</p>` : ''}`, 'Entrar',
+    async (d) => { await api('/api/login', d); iniciar(); },
+    link('Criar conta', 'telaCriar()') + link('Esqueci minha senha', 'telaEsqueci()'));
+}
+function telaCriar() {
+  formulario('Criar conta', 'Primeiro acesso', `<label>Identidade militar</label><input name="identidade" inputmode="numeric" required>
+    <p><small style="color:var(--fraco)">A conta nasce com a senha de primeiro acesso repassada pela seção. Ao entrar, você cria sua senha pessoal.</small></p>`,
+    'Criar conta', async (d) => { await api('/api/criar-conta', d); telaLogin('Conta criada. Entre com a senha de primeiro acesso.'); },
+    link('◀ Voltar', 'telaLogin()'));
+}
+function telaEsqueci() {
+  formulario('Esqueci minha senha', 'Recuperar acesso', `<p><small style="color:var(--fraco)">Informe os mesmos dados do seu cadastro. Se conferirem, você cria uma senha nova.</small></p>
+    <label>Identidade militar</label><input name="identidade" inputmode="numeric" required>${campos(`<label>Nova senha (mín. 6 caracteres)</label><input name="senha" type="password" autocomplete="new-password" required>`)}`,
+    'Criar senha nova', async (d) => { await api('/api/recuperar-senha', d); telaLogin('Senha alterada. Entre com a senha nova.'); },
+    link('◀ Voltar', 'telaLogin()'));
+}
+function telaPerfil() {
+  formulario('Complete seu cadastro', 'Primeiro acesso', `<p><small style="color:var(--fraco)">Guarde bem estes dados: eles servem para recuperar a senha.</small></p>
+    ${campos(`<label>Nova senha (mín. 6 caracteres)</label><input name="senha" type="password" autocomplete="new-password" required>`)}`,
+    'Salvar e continuar', async (d) => { await api('/api/perfil', d); iniciar(); }, link('Sair', 'sair()'));
+}
+
+function status(v) {
+  const ag = frota.agora, ps = frota.pedidos.filter((p) => p.viatura === v.id);
+  const atual = ps.find((p) => p.inicio <= ag && p.fim > ag);
+  if (atual) return { cls: 'missao', txt: `Em missão · ${atual.posto} ${atual.nome}`, ps };
+  const prox = ps.find((p) => p.inicio > ag);
+  return prox ? { cls: 'reserv', txt: `Livre · próx. ${fmt(prox.inicio)}`, ps } : { cls: 'livre', txt: 'Disponível', ps };
+}
+
+async function telaGaragem() {
+  frota = await api('/api/frota');
+  app.innerHTML = `<h2>Garagem</h2><h1>Frota do Colégio Militar de Belém</h1>
+  <div class="garagem">${frota.viaturas.map((v) => { const s = status(v);
+    return `<button class="vt" onclick="detalhe('${v.id}')">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div>
+    <div class="st ${s.cls}"><i></i>${esc(s.txt)}</div></button>`; }).join('')}</div>
+  <div style="text-align:center;margin:22px 0"><button onclick="novaMissao()" style="font-size:17px;padding:16px 30px">▶ Nova missão</button></div>
+  <div class="card"><h2>Minhas missões</h2>${frota.pedidos.filter((p) => p.identidade === eu.identidade && p.fim > frota.agora).map((p) =>
+    `<div class="ped">${esc(nomeVt(p.viatura))} → <b>${esc(p.destino)}</b><br><small>${fmt(p.inicio)} até ${fmt(p.fim)} · ${esc(p.missao)}</small>
+    <br><button class="sec" style="padding:6px 10px;margin-top:6px" onclick="cancelar(${p.id})">Cancelar</button></div>`).join('') || '<small style="color:var(--fraco)">Nenhuma missão agendada.</small>'}</div>`;
+}
+const nomeVt = (id) => frota.viaturas.find((v) => v.id === id)?.nome;
+
+function detalhe(id) {
+  const v = frota.viaturas.find((x) => x.id === id), s = status(v);
+  const lista = s.ps.filter((p) => p.fim > frota.agora);
+  $('#dlg').innerHTML = `${ICONES[v.tipo]}<h1 style="margin:6px 0">${esc(v.nome)}</h1><div class="st ${s.cls}"><i></i>${esc(s.txt)}</div>
+  <h2 style="margin-top:16px">Agenda</h2>${lista.map((p) => `<div class="ped ${p.inicio <= frota.agora ? 'agora' : ''}">
+  <b>${esc(p.posto)} ${esc(p.nome)}</b> → ${esc(p.destino)}<br><small>${fmt(p.inicio)} até ${fmt(p.fim)}<br>Missão: ${esc(p.missao)}</small></div>`).join('') || '<small style="color:var(--fraco)">Sem reservas.</small>'}
+  <div class="acoes"><button class="sec" onclick="dlg.close()">Fechar</button><button onclick="dlg.close();novaMissao('${id}')">Pedir esta viatura</button></div>`;
+  $('#dlg').showModal();
+}
+
+async function cancelar(id) { if (confirm('Cancelar esta missão?')) { await api('/api/cancelar', { id }); telaGaragem(); } }
+
+// Wizard em etapas: Viatura → Quando → Onde → Missão → Confirmar
+const ETAPAS = ['Viatura', 'Quando', 'Onde', 'Missão', 'Confirmar'];
+function novaMissao(vt) { rascunho = { viatura: vt || '', etapa: vt ? 1 : 0 }; etapa(); }
+function etapa() {
+  const r = rascunho, n = r.etapa;
+  const corpo = [
+    () => `<h1>Qual viatura?</h1><div class="garagem">${frota.viaturas.map((v) => `<button class="vt ${r.viatura === v.id ? 'sel' : ''}" onclick="rascunho.viatura='${v.id}';etapa()">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div></button>`).join('')}</div>`,
+    () => telaQuando(r),
+    () => `<h1>Para onde?</h1><label>Destino</label><input id="destino" placeholder="Ex.: 8ª RM, Aeroporto, Base Naval" value="${esc(r.destino || '')}">`,
+    () => `<h1>Qual a missão?</h1><label>Descrição</label><textarea id="missao" rows="4" placeholder="Ex.: Transporte de material escolar">${esc(r.missao || '')}</textarea>`,
+    () => `<h1>Confirmar missão</h1>${ICONES[frota.viaturas.find((v) => v.id === r.viatura).tipo]}
+      <div class="ped"><b>${esc(nomeVt(r.viatura))}</b> → ${esc(r.destino)}<br><small>${fmt(r.ini)} até ${fmt(r.fim)}<br>Missão: ${esc(r.missao)}<br>Solicitante: ${esc(eu.posto)} ${esc(eu.nome)}</small></div>`,
+  ][n]();
+  app.innerHTML = `<div class="card"><h2>Etapa ${n + 1} de 5 · ${ETAPAS[n]}</h2><div class="barra">${ETAPAS.map((_, i) => `<span class="${i <= n ? 'on' : ''}"></span>`).join('')}</div>
+  ${corpo}<p class="erro" id="e"></p><div class="acoes"><button class="sec" onclick="${n ? 'voltar()' : 'telaGaragem()'}">${n ? '◀ Voltar' : 'Cancelar'}</button>
+  <button onclick="avancar()" ${n === 0 && !r.viatura ? 'disabled' : ''}>${n === 4 ? '✔ Confirmar pedido' : 'Avançar ▶'}</button></div></div>`;
+}
+// Etapa "Quando": cartões de dia + botões de horário. Bloqueia antes de 48h e horários já reservados.
+const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], H = 36e5;
+const meiaNoite = (ms) => new Date(ms).setHours(0, 0, 0, 0);
+const hhmm = (m) => `${String(m / 60 | 0).padStart(2, '0')}:${m % 60 ? '30' : '00'}`;
+const HORAS = Array.from({ length: 35 }, (_, i) => 300 + i * 30); // 05:00 a 22:00
+function telaQuando(r) {
+  const ocup = frota.pedidos.filter((p) => p.viatura === r.viatura), limite = Date.now() + 48 * H;
+  const livre = (a, b) => !ocup.some((p) => a < p.fim && b > p.inicio);
+  const dias = (de, qtd, chave, ok) => `<div class="dias">${Array.from({ length: qtd }, (_, i) => {
+    const d = new Date(de); d.setDate(d.getDate() + i); const ms = +d, pode = ok(ms);
+    return `<button class="dia ${r[chave] === ms ? 'sel' : ''}" ${pode ? '' : 'disabled'} onclick="marcar('${chave}',${ms})">
+      <small>${DIAS[d.getDay()]}</small><b>${d.getDate()}</b><small>${d.toLocaleString('pt-BR', { month: 'short' })}</small></button>`; }).join('')}</div>`;
+  const horas = (dia, chave, ok) => `<div class="horas">${HORAS.map((m) => { const t = dia + m * 6e4, pode = ok(t);
+    return `<button class="hora ${r[chave] === m ? 'sel' : ''}" ${pode ? '' : 'disabled'} title="${pode ? '' : 'Indisponível'}" onclick="marcar('${chave}',${m})">${hhmm(m)}</button>`; }).join('')}</div>`;
+  const hoje = meiaNoite(Date.now());
+  let html = `<h1>Quando?</h1><p style="color:var(--fraco)">Antecedência mínima de 48 horas · horários riscados já estão ocupados.</p>
+    <label>📅 Dia da saída</label>${dias(hoje, 21, 'dia', (ms) => ms + 24 * H > limite)}`;
+  if (r.dia != null) html += `<label>🕗 Horário de saída</label>${horas(r.dia, 'hi', (t) => t >= limite && livre(t, t + 30 * 6e4))}`;
+  if (r.hi != null) { const ini = r.dia + r.hi * 6e4;
+    html += `<label>📅 Dia do retorno</label>${dias(r.dia, 7, 'diaV', (ms) => livre(ini, Math.max(ms, ini + 1)))}`;
+    if (r.diaV != null) html += `<label>🕓 Horário de retorno</label>${horas(r.diaV, 'hf', (t) => t > ini && livre(ini, t))}`; }
+  if (r.ini && r.fim) html += `<div class="ped">🚩 Saída <b>${fmt(r.ini)}</b> → Retorno <b>${fmt(r.fim)}</b> · ${((r.fim - r.ini) / H).toFixed(1).replace('.0', '')}h de missão</div>`;
+  return html;
+}
+function marcar(chave, v) {
+  const r = rascunho; r[chave] = v;
+  const zera = { dia: ['hi', 'diaV', 'hf'], hi: ['diaV', 'hf'], diaV: ['hf'] }[chave] || [];
+  zera.forEach((k) => delete r[k]);
+  if (chave === 'hi') r.diaV = r.dia; // retorno no mesmo dia por padrão
+  r.ini = r.hi != null ? r.dia + r.hi * 6e4 : null;
+  r.fim = r.hf != null ? r.diaV + r.hf * 6e4 : null;
+  etapa();
+}
+function guardar() { for (const k of ['destino', 'missao']) { const el = document.getElementById(k); if (el) rascunho[k] = el.value.trim(); } }
+function voltar() { guardar(); rascunho.etapa--; etapa(); }
+async function avancar() {
+  guardar(); const r = rascunho, e = $('#e');
+  if (r.etapa === 1) {
+    const i = r.ini, f = r.fim;
+    if (!i || !f || f <= i) return (e.textContent = 'Informe saída e um retorno depois da saída.');
+    if (i - Date.now() < 48 * 3600e3) return (e.textContent = 'O pedido precisa de 48 horas de antecedência.');
+  }
+  if (r.etapa === 2 && !r.destino) return (e.textContent = 'Informe o destino.');
+  if (r.etapa === 3 && !r.missao) return (e.textContent = 'Descreva a missão.');
+  if (r.etapa < 4) { r.etapa++; return etapa(); }
+  try { await api('/api/pedido', { viatura: r.viatura, inicio: r.ini, fim: r.fim, destino: r.destino, missao: r.missao });
+    alert('Missão registrada!'); telaGaragem(); } catch (err) { e.textContent = err.message; }
+}
+const dlg = $('#dlg'); iniciar();
+</script>
+</body>
+</html>
