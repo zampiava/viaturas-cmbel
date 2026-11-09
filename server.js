@@ -98,9 +98,14 @@ async function api(req, res, rota) {
 
   if (rota === 'POST /api/login') {
     const id = normId(body.identidade);
-    if (!id || !body.senha) return json(400, { erro: 'Informe a identidade e a senha.' });
-    const u = db.prepare('SELECT * FROM usuarios WHERE identidade=?').get(id);
-    if (!u) return json(401, { erro: 'Identidade sem conta. Toque em "Criar conta" primeiro.' });
+    if (!id) return json(400, { erro: 'Digite a identidade militar (somente números).' });
+    if (!body.senha) return json(400, { erro: 'Digite a senha.' });
+    let u = db.prepare('SELECT * FROM usuarios WHERE identidade=?').get(id);
+    if (!u && body.senha === SENHA_INICIAL) { // primeiro acesso: cria a conta na hora
+      db.prepare('INSERT INTO usuarios (identidade, senha) VALUES (?,?)').run(id, hash(SENHA_INICIAL));
+      u = db.prepare('SELECT * FROM usuarios WHERE identidade=?').get(id);
+    }
+    if (!u) return json(401, { erro: 'Identidade sem conta. No primeiro acesso use a senha 123.' });
     if (u.bloqueado_ate > Date.now()) return json(429, { erro: `Muitas tentativas erradas. Tente novamente após ${new Date(u.bloqueado_ate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.` });
     if (!confere(body.senha, u.senha)) return json(401, { erro: contarFalha(u) ? 'Senha errada 5 vezes. Acesso bloqueado por 15 minutos.' : 'Identidade ou senha inválidas.' });
     db.prepare('UPDATE usuarios SET falhas=0, bloqueado_ate=0 WHERE identidade=?').run(id);

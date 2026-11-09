@@ -40,8 +40,11 @@
       db.usuarios[id] = { senha: '123', trocar: true }; return [201, {}];
     }
     if (r === 'POST /api/login') {
-      const id = normId(b.identidade), u = db.usuarios[id];
-      if (!u) return [401, { erro: 'Identidade sem conta. Toque em "Criar conta" primeiro.' }];
+      const id = normId(b.identidade);
+      if (!id) return [400, { erro: 'Digite a identidade militar (somente números).' }];
+      if (!db.usuarios[id] && b.senha === '123') db.usuarios[id] = { senha: '123', trocar: true };
+      const u = db.usuarios[id];
+      if (!u) return [401, { erro: 'Identidade sem conta. No primeiro acesso use a senha 123.' }];
       if (u.senha !== b.senha) return [401, { erro: 'Identidade ou senha inválidas.' }];
       db.sessao = id; return [200, pub(id)];
     }

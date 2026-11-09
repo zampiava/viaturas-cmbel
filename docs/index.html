@@ -13,7 +13,7 @@ h2{margin:0 0 4px;font-size:13px;letter-spacing:3px;color:var(--ouro);text-trans
 input,textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--borda);background:#0b100d;color:var(--txt);font:inherit;margin:6px 0 12px}
 label{font-size:13px;color:var(--fraco)}button{cursor:pointer;font:inherit;border:0;border-radius:8px;padding:12px 18px;background:var(--verde);color:#08120b;font-weight:700}
 button.sec{background:transparent;color:var(--txt);border:1px solid var(--borda)}button:disabled{opacity:.4;cursor:default}
-.erro{color:var(--verm);min-height:20px}.erro:not(:empty){background:#d9534f22;border:1px solid var(--verm);padding:10px 12px;border-radius:8px;font-weight:600}.garagem{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.erro{color:var(--verm);min-height:20px}.falta{border-color:var(--verm)!important}.erro:not(:empty){background:#d9534f22;border:1px solid var(--verm);padding:10px 12px;border-radius:8px;font-weight:600}.garagem{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
 .vt{background:var(--painel);border:2px solid var(--borda);border-radius:14px;padding:14px;cursor:pointer;transition:.15s;text-align:left;color:var(--txt);font-weight:400;width:100%}
 .vt:hover,.vt.sel{border-color:var(--ouro);transform:translateY(-3px);box-shadow:0 8px 24px #0008}
 .vt.off .foto{filter:grayscale(1) brightness(.6)}.vt.off{opacity:.85}
@@ -81,13 +81,21 @@ const link = (txt, fn) => `<button type="button" class="sec" style="width:100%;m
 function formulario(titulo, sub, corpo, botao, acao, rodape = '') {
   $('#quem').innerHTML = '';
   app.innerHTML = `<div class="card" style="max-width:400px;margin:30px auto"><img class="selo" src="img/brasao.png" alt="">
-  <h2>${sub}</h2><h1>${titulo}</h1><form id="f">${corpo}<p class="erro" id="e"></p><button style="width:100%">${botao}</button></form>${rodape}</div>`;
-  $('#f').onsubmit = async (ev) => { ev.preventDefault(); const b = ev.target.querySelector('button:not([type])'); b.disabled = true;
+  <h2>${sub}</h2><h1>${titulo}</h1><form id="f" novalidate>${corpo}<p class="erro" id="e"></p><button style="width:100%">${botao}</button></form>${rodape}</div>`;
+  scrollTo(0, 0);
+  $('#f').oninput = (ev) => { $('#e').textContent = ''; ev.target.classList.remove('falta'); };
+  $('#f').onsubmit = async (ev) => { ev.preventDefault();
+    const faltam = [...ev.target.elements].filter((el) => el.required && !el.value.trim());
+    faltam.forEach((el) => el.classList.add('falta'));
+    if (faltam.length) { $('#e').textContent = '⚠ Preencha: ' + faltam.map((el) => el.previousElementSibling?.textContent.split(' —')[0] || el.name).join(', ') + '.';
+      return faltam[0].focus(); }
+    const b = ev.target.querySelector('button:not([type])'); b.disabled = true;
     try { await acao(Object.fromEntries(new FormData(ev.target))); } catch (e) { $('#e').textContent = '⚠ ' + e.message; $('#e').scrollIntoView({ block: 'center', behavior: 'smooth' }); } b.disabled = false; };
 }
 function telaLogin(aviso = '') {
   formulario('Identifique-se', 'Acesso', `<label>Identidade militar</label><input name="identidade" autocomplete="username" autocapitalize="characters" required>
     <label>Senha</label><input name="senha" type="password" autocomplete="current-password" required>
+    <p><small style="color:var(--fraco)">Primeiro acesso? Digite sua identidade e a senha <b>123</b>.</small></p>
     ${aviso ? `<p style="color:var(--verde)">${esc(aviso)}</p>` : ''}`, 'Entrar',
     async (d) => {
       if (d.identidade.trim().toUpperCase() === 'FISCAL') return entrarFiscal({ usuario_fiscal: 'FISCAL', senha_fiscal: d.senha });
@@ -123,7 +131,7 @@ const nomeV = (id) => fdados.viaturas.find((v) => v.id === id)?.nome || id;
 function telaFiscal() {
   $('#quem').innerHTML = `<b style="color:var(--ouro)">FISCALIZAÇÃO</b> <button class="sec" onclick="credFiscal=null;telaLogin()">Sair</button>`;
   const abas = [['missoes', '📋 Missões'], ['viaturas', '🚐 Viaturas'], ['militares', '👤 Militares']]
-    .map(([k, t]) => `<button class="${aba === k ? '' : 'sec'}" onclick="aba='${k}';telaFiscal()">${t}</button>`).join('');
+    .map(([k, t]) => `<button class="${aba === k ? '' : 'sec'}" onclick="aba='${k}';telaFiscal();scrollTo(0,0)">${t}</button>`).join('');
   app.innerHTML = `<div class="noprint"><h2>Área da Fiscalização</h2><div class="abas">${abas}</div></div>${{ missoes: fMissoes, viaturas: fViaturas, militares: fMilitares }[aba]()}`;
 }
 function fMissoes() {
@@ -137,7 +145,7 @@ function fMissoes() {
     <table><thead><tr><th>Saída</th><th>Retorno</th><th>Viatura</th><th>Destino</th><th>Missão</th><th>Militar</th><th class="noprint"></th></tr></thead><tbody>
     ${lista.map((p) => `<tr><td>${fmt(p.inicio)}</td><td>${fmt(p.fim)}</td><td>${esc(nomeV(p.viatura))}</td><td>${esc(p.destino)}</td><td>${esc(p.missao)}</td>
       <td>${esc(p.posto)} ${esc(p.nome)}</td><td class="noprint" style="white-space:nowrap"><button class="sec mini" onclick="editarMissao(${p.id})">Editar</button>
-      <button class="sec mini" onclick="if(confirm('Excluir esta missão?'))fapi('pedido-excluir',{id:${p.id}})">Excluir</button></td></tr>`).join('')
+      <button class="sec mini" onclick="confirmar('Excluir esta missão?').then((s)=>s&&fapi('pedido-excluir',{id:${p.id}}))">Excluir</button></td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--fraco)">Nenhuma missão no período.</td></tr>'}</tbody></table>
     <div class="so-print assin">Fiscal de Viaturas: ____________________________________</div></div>`;
 }
@@ -160,20 +168,20 @@ function fViaturas() {
     <div><label>Placa / EB</label><input name="placa" value="${esc(v.placa || '')}"></div>
     <label class="chave"><input type="checkbox" name="disponivel" ${v.disponivel ? 'checked' : ''} onchange="this.form.motivo.required=!this.checked"> Disponível para pedidos</label>
     <div class="todo"><label>Motivo da indisponibilidade</label><input name="motivo" value="${esc(v.motivo || '')}" placeholder="Ex.: Em manutenção — troca de pneus" ${v.disponivel ? '' : 'required'}></div>
-    <div class="todo acoes">${v.id ? `<button type="button" class="sec" onclick="if(confirm('Excluir esta viatura e todas as missões dela?'))fapi('remover',{id:'${v.id}'})">Excluir viatura</button>` : '<span></span>'}<button>${v.id ? 'Salvar' : '+ Adicionar'}</button></div></form>`;
+    <div class="todo acoes">${v.id ? `<button type="button" class="sec" onclick="confirmar('Excluir esta viatura e todas as missões dela?').then((s)=>s&&fapi('remover',{id:'${v.id}'}))">Excluir viatura</button>` : '<span></span>'}<button>${v.id ? 'Salvar' : '+ Adicionar'}</button></div></form>`;
   return `<p style="color:var(--fraco)">Desmarque "Disponível" e informe o motivo para bloquear os pedidos daquela viatura.</p>${fdados.viaturas.map(ficha).join('')}${ficha()}`;
 }
 async function salvarVt(ev, id) {
   ev.preventDefault(); const f = ev.target;
-  try { await fapi('viatura', { ...Object.fromEntries(new FormData(f)), id, disponivel: f.disponivel.checked }); } catch (e) { alert(e.message); }
+  try { await fapi('viatura', { ...Object.fromEntries(new FormData(f)), id, disponivel: f.disponivel.checked }); } catch (e) { avisar('⚠ ' + e.message); }
 }
 function fMilitares() {
   return `<p style="color:var(--fraco)">"Zerar senha" volta a senha para <b>123</b>; no próximo acesso o militar cria uma senha nova.</p>
     <table><thead><tr><th>Identidade</th><th>Militar</th><th>Seção</th><th></th></tr></thead><tbody>
     ${fdados.usuarios.map((u) => `<tr><td>${esc(u.identidade)}</td><td>${esc(u.posto || '')} ${esc(u.nome || '(sem cadastro)')}<br><small style="color:var(--fraco)">${esc(u.completo || '')}</small></td><td>${esc(u.secao || '')}</td>
       <td style="white-space:nowrap"><button class="sec mini" onclick="editarMilitar('${u.identidade}')">Editar</button>
-      <button class="sec mini" onclick="if(confirm('Zerar a senha para 123?'))fapi('usuario-zerar',{identidade:'${u.identidade}'}).then(()=>alert('Senha zerada: 123'))">Zerar senha</button>
-      <button class="sec mini" onclick="if(confirm('Excluir este militar e as missões dele?'))fapi('usuario-excluir',{identidade:'${u.identidade}'})">Excluir</button></td></tr>`).join('')
+      <button class="sec mini" onclick="confirmar('Zerar a senha deste militar para 123?').then((s)=>s&&fapi('usuario-zerar',{identidade:'${u.identidade}'}).then(()=>avisar('Senha zerada. O militar entra com 123 e cria uma senha nova.')))">Zerar senha</button>
+      <button class="sec mini" onclick="confirmar('Excluir este militar e as missões dele?').then((s)=>s&&fapi('usuario-excluir',{identidade:'${u.identidade}'}))">Excluir</button></td></tr>`).join('')
       || '<tr><td colspan="4" style="text-align:center;color:var(--fraco)">Nenhum militar cadastrado.</td></tr>'}</tbody></table>`;
 }
 function editarMilitar(id) {
@@ -194,7 +202,7 @@ function status(v) {
 }
 
 async function telaGaragem() {
-  frota = await api('/api/frota');
+  frota = await api('/api/frota'); scrollTo(0, 0);
   app.innerHTML = `<h2>Garagem</h2><h1>Frota do Colégio Militar de Belém</h1>
   <div class="garagem">${[...frota.viaturas].sort((a, b) => b.disponivel - a.disponivel).map((v) => { const s = status(v);
     return `<button class="vt ${v.disponivel ? '' : 'off'}" onclick="detalhe('${v.id}')">${ICONES[v.tipo]}<div class="nome">${esc(v.nome)}</div>
@@ -216,7 +224,18 @@ function detalhe(id) {
   $('#dlg').showModal();
 }
 
-async function cancelar(id) { if (confirm('Cancelar esta missão?')) { await api('/api/cancelar', { id }); telaGaragem(); } }
+async function cancelar(id) { if (await confirmar('Cancelar esta missão?')) { await api('/api/cancelar', { id }); telaGaragem(); } }
+// Confirmação e aviso dentro do próprio app (as janelas do navegador podem ser bloqueadas).
+function confirmar(msg, sim = 'Sim', nao = 'Não') {
+  return new Promise((ok) => {
+    $('#dlg').innerHTML = `<h1 style="font-size:19px">${esc(msg)}</h1><div class="acoes">${nao ? `<button class="sec" id="dn">${nao}</button>` : '<span></span>'}<button id="ds">${sim}</button></div>`;
+    $('#dlg').onclose = () => ok(false);
+    $('#ds').onclick = () => { $('#dlg').onclose = null; $('#dlg').close(); ok(true); };
+    if (nao) $('#dn').onclick = () => $('#dlg').close();
+    $('#dlg').showModal();
+  });
+}
+const avisar = (msg) => confirmar(msg, 'OK', '');
 
 // Wizard em etapas: Viatura → Quando → Onde → Missão → Confirmar
 const ETAPAS = ['Viatura', 'Quando', 'Onde', 'Missão', 'Confirmar'];
@@ -234,6 +253,9 @@ function etapa() {
   app.innerHTML = `<div class="card"><h2>Etapa ${n + 1} de 5 · ${ETAPAS[n]}</h2><div class="barra">${ETAPAS.map((_, i) => `<span class="${i <= n ? 'on' : ''}"></span>`).join('')}</div>
   ${corpo}<p class="erro" id="e"></p><div class="acoes"><button class="sec" onclick="${n ? 'voltar()' : 'telaGaragem()'}">${n ? '◀ Voltar' : 'Cancelar'}</button>
   <button onclick="avancar()" ${n === 0 && !r.viatura ? 'disabled' : ''}>${n === 4 ? '✔ Confirmar pedido' : 'Avançar ▶'}</button></div></div>`;
+  app.querySelectorAll('input,textarea').forEach((el) => { el.oninput = () => { $('#e').textContent = ''; };
+    el.onkeydown = (ev) => { if (ev.key === 'Enter' && (el.tagName === 'INPUT' || ev.ctrlKey)) { ev.preventDefault(); avancar(); } }; });
+  if (r.etapaVista !== n) { r.etapaVista = n; scrollTo(0, 0); app.querySelector('input,textarea')?.focus(); }
 }
 // Etapa "Quando": cartões de dia + botões de horário. Bloqueia antes de 48h e horários já reservados.
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], H = 36e5;
@@ -267,6 +289,8 @@ function marcar(chave, v) {
   r.ini = r.hi != null ? r.dia + r.hi * 6e4 : null;
   r.fim = r.hf != null ? r.diaV + r.hf * 6e4 : null;
   etapa();
+  const alvo = r.fim ? app.querySelector('.card .ped') : [...app.querySelectorAll('.card label')].pop();
+  alvo?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 function guardar() { for (const k of ['destino', 'missao']) { const el = document.getElementById(k); if (el) rascunho[k] = el.value.trim(); } }
 function voltar() { guardar(); rascunho.etapa--; etapa(); }
@@ -281,7 +305,7 @@ async function avancar() {
   if (r.etapa === 3 && !r.missao) return (e.textContent = 'Descreva a missão.');
   if (r.etapa < 4) { r.etapa++; return etapa(); }
   try { await api('/api/pedido', { viatura: r.viatura, inicio: r.ini, fim: r.fim, destino: r.destino, missao: r.missao });
-    alert('Missão registrada!'); telaGaragem(); } catch (err) { e.textContent = err.message; }
+    await telaGaragem(); avisar('✔ Missão registrada!'); } catch (err) { e.textContent = err.message; }
 }
 const dlg = $('#dlg'); iniciar();
 </script>
